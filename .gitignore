@@ -1,0 +1,22 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+env/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# IDE
+.vscode/
+
+# Sistema operacional
+.DS_Store
+Thumbs.db
+
+# Resultados temporários
+*.log
+
+# Dados processados
+data/processed/
