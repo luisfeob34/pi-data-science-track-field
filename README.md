@@ -20,6 +20,109 @@ O projeto busca construir um pipeline de dados organizado, automatizado
 e reproduzível, permitindo a geração, processamento, análise e
 monitoramento dos dados.
 
+## Executando o projeto em outro computador
+
+Esta seção apresenta o procedimento necessário para baixar o projeto em outro
+computador e gerar os dados de vendas utilizando o ambiente reproduzível
+definido pelo projeto.
+
+### Pré-requisitos
+
+Para a execução através de containers, o computador precisa possuir:
+
+- Git
+- Docker
+- Acesso à internet para baixar o repositório e as imagens necessárias
+
+Não é necessário instalar manualmente Python, Pandas, NumPy ou Faker, pois
+essas dependências são configuradas automaticamente dentro da imagem Docker.
+
+### 1. Clonar o repositório
+
+Abra um terminal e execute:
+
+```bash
+git clone https://github.com/luisfeob34/pi-data-science-track-field.git
+```
+
+### 2. Entrar na pasta do projeto
+
+```bash
+cd pi-data-science-track-field
+```
+
+### 3. Construir a imagem Docker
+
+```bash
+docker build -t pi-track-field .
+```
+
+O Docker utilizará o `Dockerfile` e o `requirements.txt` do projeto para criar
+um ambiente contendo Python e todas as dependências necessárias.
+
+### 4. Executar o gerador e salvar os dados no computador
+
+Em Linux, Ubuntu ou WSL, execute:
+
+```bash
+docker run --rm \
+  -v "$(pwd)/data/raw:/app/data/raw" \
+  pi-track-field
+```
+
+O volume Docker conecta a pasta `data/raw` do computador à pasta
+`/app/data/raw` do container.
+
+Dessa forma, o arquivo gerado dentro do container permanece disponível no
+computador mesmo depois que o container é encerrado.
+
+### 5. Resultado esperado
+
+Ao executar o container, deverá ser exibido:
+
+```text
+Dados gerados com sucesso!
+Quantidade de vendas: 1000
+Arquivo: data/raw/vendas_simuladas.csv
+```
+
+O arquivo gerado estará disponível em:
+
+```text
+data/raw/vendas_simuladas.csv
+```
+
+### Fluxo de reprodução
+
+```text
+GitHub
+   |
+   v
+git clone
+   |
+   v
+Código do projeto
+   |
+   v
+docker build
+   |
+   v
+Imagem pi-track-field
+   |
+   v
+docker run
+   |
+   v
+scripts/gerar_dados.py
+   |
+   v
+data/raw/vendas_simuladas.csv
+```
+
+Esse procedimento permite reproduzir a geração dos dados em outro computador
+sem a necessidade de instalar manualmente as bibliotecas Python utilizadas
+pelo projeto.
+
 ## Estrutura do projeto
 
 ```text
