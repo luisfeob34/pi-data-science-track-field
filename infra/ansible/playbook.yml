@@ -1,0 +1,40 @@
+---
+- name: Configurar ambiente do PI Data Science Track & Field
+  hosts: local
+  become: true
+
+  tasks:
+    - name: Atualizar cache de pacotes
+      apt:
+        update_cache: true
+
+    - name: Instalar Git
+      apt:
+        name: git
+        state: present
+
+    - name: Instalar Python 3
+      apt:
+        name: python3
+        state: present
+
+    - name: Instalar pip
+      apt:
+        name: python3-pip
+        state: present
+
+    - name: Instalar suporte a ambiente virtual Python
+      apt:
+        name: python3-venv
+        state: present
+
+    - name: Instalar Docker
+      apt:
+        name: docker.io
+        state: present
+
+    - name: Garantir que o Docker esteja iniciado
+      service:
+        name: docker
+        state: started
+        enabled: true

@@ -20,3 +20,9 @@ Thumbs.db
 
 # Dados processados
 data/processed/
+
+# Dados brutos gerados pelo simulador
+data/raw/*.csv
+
+# Instaladores locais
+*.deb
