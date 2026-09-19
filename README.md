@@ -20,130 +20,38 @@ O projeto busca construir um pipeline de dados organizado, automatizado
 e reproduzível, permitindo a geração, processamento, análise e
 monitoramento dos dados.
 
-## Executando o projeto em outro computador
+---
 
-Esta seção apresenta o procedimento necessário para baixar o projeto em outro
-computador e gerar os dados de vendas utilizando o ambiente reproduzível
-definido pelo projeto.
-
-### Pré-requisitos
-
-Para a execução através de containers, o computador precisa possuir:
-
-- Git
-- Docker
-- Acesso à internet para baixar o repositório e as imagens necessárias
-
-Não é necessário instalar manualmente Python, Pandas, NumPy ou Faker, pois
-essas dependências são configuradas automaticamente dentro da imagem Docker.
-
-### 1. Clonar o repositório
-
-Abra um terminal e execute:
-
-```bash
-git clone https://github.com/luisfeob34/pi-data-science-track-field.git
-```
-
-### 2. Entrar na pasta do projeto
-
-```bash
-cd pi-data-science-track-field
-```
-
-### 3. Construir a imagem Docker
-
-```bash
-docker build -t pi-track-field .
-```
-
-O Docker utilizará o `Dockerfile` e o `requirements.txt` do projeto para criar
-um ambiente contendo Python e todas as dependências necessárias.
-
-### 4. Executar o gerador e salvar os dados no computador
-
-Em Linux, Ubuntu ou WSL, execute:
-
-```bash
-docker run --rm \
-  -v "$(pwd)/data/raw:/app/data/raw" \
-  pi-track-field
-```
-
-O volume Docker conecta a pasta `data/raw` do computador à pasta
-`/app/data/raw` do container.
-
-Dessa forma, o arquivo gerado dentro do container permanece disponível no
-computador mesmo depois que o container é encerrado.
-
-### 5. Resultado esperado
-
-Ao executar o container, deverá ser exibido:
-
-```text
-Dados gerados com sucesso!
-Quantidade de vendas: 1000
-Arquivo: data/raw/vendas_simuladas.csv
-```
-
-O arquivo gerado estará disponível em:
-
-```text
-data/raw/vendas_simuladas.csv
-```
-
-### Fluxo de reprodução
-
-```text
-GitHub
-   |
-   v
-git clone
-   |
-   v
-Código do projeto
-   |
-   v
-docker build
-   |
-   v
-Imagem pi-track-field
-   |
-   v
-docker run
-   |
-   v
-scripts/gerar_dados.py
-   |
-   v
-data/raw/vendas_simuladas.csv
-```
-
-Esse procedimento permite reproduzir a geração dos dados em outro computador
-sem a necessidade de instalar manualmente as bibliotecas Python utilizadas
-pelo projeto.
-
-## Estrutura do projeto
+# Estrutura do projeto
 
 ```text
 PI-Data-Science-Track-Field/
+│
 ├── data/
 │   ├── raw/
 │   └── processed/
+│
 ├── docs/
+│
 ├── infra/
 │   ├── ansible/
 │   │   ├── inventory.ini
 │   │   └── playbook.yml
+│   │
 │   ├── kubernetes/
 │   │   └── namespace.yml
+│   │
 │   └── monitoring/
 │       └── README.md
+│
 ├── notebooks/
 ├── results/
+│
 ├── scripts/
 │   └── gerar_dados.py
+│
 ├── src/
+│
 ├── .dockerignore
 ├── .gitignore
 ├── Dockerfile
@@ -151,7 +59,7 @@ PI-Data-Science-Track-Field/
 └── requirements.txt
 ```
 
-### Diretórios
+## Diretórios
 
 - `data/raw/` - Dados brutos gerados ou recebidos pelo pipeline.
 - `data/processed/` - Dados após limpeza e transformação.
@@ -159,33 +67,35 @@ PI-Data-Science-Track-Field/
 - `infra/` - Arquivos relacionados à infraestrutura e DevOps.
 - `infra/ansible/` - Automação da configuração do ambiente Linux.
 - `infra/kubernetes/` - Manifestos do Kubernetes.
-- `infra/monitoring/` - Documentação e configuração de monitoramento.
+- `infra/monitoring/` - Documentação relacionada ao monitoramento.
 - `notebooks/` - Notebooks utilizados nas análises.
 - `results/` - Resultados, relatórios e visualizações.
 - `scripts/` - Scripts de geração e automação.
 - `src/` - Código-fonte relacionado ao processamento dos dados.
 
-## Tecnologias
+---
 
-### Desenvolvimento e dados
+# Tecnologias utilizadas
+
+## Desenvolvimento e dados
 
 - Python 3.14
 - Pandas 3.0.6
 - NumPy 2.5.3
 - Faker 40.39.0
 
-### Versionamento
+## Versionamento
 
 - Git
 - GitHub
 
-### Ambiente
+## Ambiente
 
 - Linux
-- Ubuntu via WSL2
+- Ubuntu via WSL2 em computadores Windows
 - Python Virtual Environment (`venv`)
 
-### DevOps e infraestrutura
+## DevOps e infraestrutura
 
 - Ansible
 - Docker
@@ -194,40 +104,43 @@ PI-Data-Science-Track-Field/
 - kubectl
 - Helm
 
-### Monitoramento
+## Monitoramento
 
 - Prometheus
 
-## Arquitetura de infraestrutura
+---
 
-A infraestrutura de desenvolvimento utiliza Linux através do Ubuntu
-executado no WSL2.
+# Arquitetura da infraestrutura
+
+O projeto foi estruturado para execução em ambiente Linux.
+
+Durante o desenvolvimento foi utilizado Ubuntu através do WSL2 em um
+computador Windows.
+
+Caso o computador já utilize Linux nativamente, o WSL2 não é necessário.
 
 O Git é utilizado para controle de versão e o GitHub para armazenamento
 e compartilhamento do repositório.
 
-O Ansible é utilizado para automatizar a preparação do ambiente Linux.
+O Ansible é utilizado para automatizar parte da preparação do ambiente.
 
 O Docker é utilizado para criar um ambiente padronizado e reproduzível
 para execução da aplicação.
 
-O Kubernetes é utilizado para a orquestração dos containers. Para o
-ambiente local de desenvolvimento, o cluster Kubernetes é executado
-através do Minikube utilizando o Docker como driver.
+O Kubernetes é utilizado para orquestração dos containers. No ambiente
+local de desenvolvimento, o Kubernetes é executado através do Minikube
+utilizando Docker como driver.
 
 O Helm é utilizado para instalação e gerenciamento de aplicações no
 Kubernetes.
 
-O Prometheus é utilizado para monitoramento da infraestrutura e coleta
-de métricas dos serviços executados no cluster.
-
-Fluxo simplificado da infraestrutura:
+O Prometheus é utilizado para monitoramento da infraestrutura.
 
 ```text
 GitHub
    |
    v
-Linux / Ubuntu / WSL2
+Linux / Ubuntu
    |
    +---- Ansible
    |
@@ -235,9 +148,10 @@ Linux / Ubuntu / WSL2
 Docker
    |
    v
-Kubernetes / Minikube
+Aplicação / Pipeline
    |
-   +---- Pipeline de dados
+   v
+Kubernetes / Minikube
    |
    +---- Prometheus
             |
@@ -245,12 +159,374 @@ Kubernetes / Minikube
        Monitoramento
 ```
 
-## Dependências Python
+---
 
-As dependências Python do projeto estão registradas no arquivo
-`requirements.txt`.
+# Executando o projeto em outro computador
 
-Atualmente são utilizadas:
+Esta seção apresenta o procedimento necessário para executar o projeto
+e gerar os dados em outro computador.
+
+Para gerar os dados utilizando Docker são necessários apenas:
+
+- Ambiente Linux;
+- Git;
+- Docker;
+- Acesso à internet.
+
+Não é necessário instalar manualmente Python, Pandas, NumPy ou Faker
+para executar através do Docker.
+
+O `Dockerfile` e o `requirements.txt` são responsáveis por configurar
+essas dependências dentro da imagem Docker.
+
+---
+
+# 1. Preparar o sistema operacional
+
+Existem dois cenários possíveis.
+
+## Opção A - Computador com Linux
+
+Se o computador já utiliza uma distribuição Linux, como Ubuntu, não é
+necessário instalar WSL.
+
+Continue diretamente para a instalação do Git e Docker.
+
+## Opção B - Computador com Windows
+
+Caso o computador utilize Windows, o projeto pode ser executado em Linux
+através do WSL2.
+
+Abra o PowerShell como **Administrador** e execute:
+
+```powershell
+wsl --install
+```
+
+Reinicie o computador caso seja solicitado.
+
+Depois, abra o Ubuntu e finalize a configuração inicial criando um
+usuário e uma senha para o ambiente Linux.
+
+Para verificar:
+
+```powershell
+wsl --status
+```
+
+A partir desse momento, os próximos comandos devem ser executados dentro
+do terminal Ubuntu/WSL.
+
+---
+
+# 2. Atualizar os pacotes do Linux
+
+No terminal Linux/Ubuntu:
+
+```bash
+sudo apt update
+```
+
+Opcionalmente, atualize os pacotes instalados:
+
+```bash
+sudo apt upgrade -y
+```
+
+---
+
+# 3. Instalar o Git
+
+Execute:
+
+```bash
+sudo apt install git -y
+```
+
+Verifique a instalação:
+
+```bash
+git --version
+```
+
+Se uma versão for exibida, o Git está instalado corretamente.
+
+Exemplo:
+
+```text
+git version 2.x.x
+```
+
+---
+
+# 4. Instalar o Docker
+
+Execute:
+
+```bash
+sudo apt install docker.io -y
+```
+
+Verifique:
+
+```bash
+docker --version
+```
+
+Caso o Docker ainda não esteja iniciado:
+
+```bash
+sudo service docker start
+```
+
+Adicione o usuário atual ao grupo Docker:
+
+```bash
+sudo usermod -aG docker $USER
+```
+
+Depois desse comando, feche e abra novamente o terminal para que a
+alteração seja aplicada.
+
+Caso queira aplicar o novo grupo na sessão atual, execute:
+
+```bash
+newgrp docker
+```
+
+Caso o comando `newgrp` não esteja disponível:
+
+```bash
+sudo apt install util-linux-extra -y
+```
+
+Depois execute novamente:
+
+```bash
+newgrp docker
+```
+
+---
+
+# 5. Testar o Docker
+
+Execute:
+
+```bash
+docker run hello-world
+```
+
+Se aparecer:
+
+```text
+Hello from Docker!
+```
+
+o Docker está funcionando corretamente.
+
+Neste momento, o computador possui tudo que é necessário para baixar
+e executar o gerador de dados do projeto:
+
+```text
+Linux / Ubuntu
+      |
+      +---- Git
+      |
+      +---- Docker
+```
+
+---
+
+# 6. Clonar o projeto
+
+Execute:
+
+```bash
+git clone https://github.com/luisfeob34/pi-data-science-track-field.git
+```
+
+Entre na pasta:
+
+```bash
+cd pi-data-science-track-field
+```
+
+---
+
+# 7. Construir a imagem Docker
+
+Na raiz do projeto, execute:
+
+```bash
+docker build -t pi-track-field .
+```
+
+O Docker utilizará os arquivos do projeto para preparar automaticamente
+o ambiente necessário.
+
+O processo pode ser representado por:
+
+```text
+Dockerfile
+     |
+     v
+Python
+     |
+     v
+requirements.txt
+     |
+     v
+Pandas + NumPy + Faker
+     |
+     v
+Código do projeto
+     |
+     v
+Imagem pi-track-field
+```
+
+---
+
+# 8. Executar o projeto e gerar os dados
+
+Execute:
+
+```bash
+docker run --rm \
+  -v "$(pwd)/data/raw:/app/data/raw" \
+  pi-track-field
+```
+
+O parâmetro:
+
+```text
+--rm
+```
+
+remove o container após a execução.
+
+O volume:
+
+```text
+-v "$(pwd)/data/raw:/app/data/raw"
+```
+
+conecta a pasta do computador com a pasta utilizada pelo container:
+
+```text
+Computador                    Container
+
+data/raw/       <-------->     /app/data/raw/
+```
+
+Isso permite que o CSV gerado permaneça salvo no computador mesmo após
+o encerramento do container.
+
+---
+
+# 9. Resultado esperado
+
+O terminal deverá apresentar:
+
+```text
+Dados gerados com sucesso!
+Quantidade de vendas: 1000
+Arquivo: data/raw/vendas_simuladas.csv
+```
+
+O arquivo estará disponível em:
+
+```text
+data/raw/vendas_simuladas.csv
+```
+
+Portanto, todo o processo em outro computador é:
+
+```text
+              NOVO COMPUTADOR
+                     |
+          +----------+----------+
+          |                     |
+       Windows                Linux
+          |                     |
+       WSL2                  direto
+          |                     |
+       Ubuntu                   |
+          +----------+----------+
+                     |
+                     v
+                    Git
+                     |
+                     v
+                   Docker
+                     |
+                     v
+                 git clone
+                     |
+                     v
+                docker build
+                     |
+                     v
+                 docker run
+                     |
+                     v
+             gerar_dados.py
+                     |
+                     v
+        vendas_simuladas.csv
+```
+
+---
+
+# Execução local com Python
+
+Também é possível executar o projeto diretamente com Python, sem utilizar
+o Docker.
+
+Nesse caso, Python e suas dependências precisam estar instalados no
+computador.
+
+## Criar o ambiente virtual
+
+```bash
+python3 -m venv .venv
+```
+
+## Ativar o ambiente
+
+```bash
+source .venv/bin/activate
+```
+
+## Instalar as dependências
+
+```bash
+python -m pip install -r requirements.txt
+```
+
+## Gerar os dados
+
+```bash
+python scripts/gerar_dados.py
+```
+
+Também é possível definir outra quantidade de registros:
+
+```bash
+python scripts/gerar_dados.py --quantidade 10000
+```
+
+---
+
+# Dependências Python
+
+As dependências utilizadas pelo projeto estão registradas no arquivo:
+
+```text
+requirements.txt
+```
+
+Atualmente:
 
 ```text
 pandas==3.0.6
@@ -258,229 +534,16 @@ numpy==2.5.3
 Faker==40.39.0
 ```
 
-## Preparação do ambiente Python
+Ao executar através do Docker, essas dependências são instaladas
+automaticamente durante a construção da imagem.
 
-Criar um ambiente virtual:
+---
 
-```bash
-python3 -m venv .venv
-```
-
-Ativar o ambiente:
-
-```bash
-source .venv/bin/activate
-```
-
-Instalar as dependências:
-
-```bash
-python -m pip install -r requirements.txt
-```
-
-## Execução do gerador de dados
-
-O projeto possui um simulador de vendas desenvolvido em Python.
-
-Para gerar 1.000 registros:
-
-```bash
-python scripts/gerar_dados.py
-```
-
-O arquivo será criado em:
-
-```text
-data/raw/vendas_simuladas.csv
-```
-
-Também é possível definir a quantidade de registros:
-
-```bash
-python scripts/gerar_dados.py --quantidade 10000
-```
-
-## Docker
+# Docker
 
 O projeto possui um `Dockerfile` responsável por criar um ambiente
-isolado contendo Python, dependências e o código da aplicação.
-
-### Construir a imagem
-
-```bash
-docker build -t pi-track-field .
-```
-
-### Executar o container
-
-```bash
-docker run --rm pi-track-field
-```
-
-Ao executar o container, o gerador de dados Python é iniciado
-automaticamente.
-
-## Ansible
-
-Os arquivos de automação estão disponíveis em:
-
-```text
-infra/ansible/
-```
-
-O inventário utiliza a máquina Linux local:
-
-```text
-localhost
-```
-
-### Testar comunicação
-
-```bash
-ansible all -i infra/ansible/inventory.ini -m ping
-```
-
-O resultado esperado contém:
-
-```text
-"ping": "pong"
-```
-
-### Validar o playbook
-
-```bash
-ansible-playbook -i infra/ansible/inventory.ini infra/ansible/playbook.yml --syntax-check
-```
-
-### Executar o playbook
-
-```bash
-ansible-playbook -i infra/ansible/inventory.ini infra/ansible/playbook.yml --ask-become-pass
-```
-
-O playbook prepara componentes básicos do ambiente, incluindo Git,
-Python, pip, suporte a ambientes virtuais e Docker.
-
-## Kubernetes
-
-O ambiente Kubernetes local utiliza Minikube com o Docker como driver.
-
-### Iniciar o cluster
-
-```bash
-minikube start --driver=docker
-```
-
-### Verificar o cluster
-
-```bash
-minikube status
-```
-
-### Criar recursos do projeto
-
-```bash
-kubectl apply -f infra/kubernetes/namespace.yml
-```
-
-### Verificar namespaces
-
-```bash
-kubectl get namespaces
-```
-
-O projeto utiliza o namespace:
-
-```text
-monitoramento
-```
-
-## Monitoramento com Prometheus
-
-O Prometheus é executado dentro do Kubernetes.
-
-Adicionar o repositório Helm:
-
-```bash
-helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
-```
-
-Atualizar os repositórios:
-
-```bash
-helm repo update
-```
-
-Instalar o Prometheus em um ambiente novo:
-
-```bash
-helm install prometheus prometheus-community/prometheus \
-  --namespace monitoramento
-```
-
-Verificar os componentes:
-
-```bash
-kubectl get pods -n monitoramento
-```
-
-Os pods devem apresentar o estado `Running`.
-
-### Acessar o Prometheus
-
-```bash
-kubectl port-forward -n monitoramento svc/prometheus-server 9090:80
-```
-
-Com o redirecionamento ativo, a interface do Prometheus pode ser
-acessada localmente pela porta `9090`.
-
-Mais informações sobre o monitoramento estão disponíveis em:
-
-```text
-infra/monitoring/README.md
-```
-
-## Procedimento para reprodução do ambiente
-
-Para reproduzir o projeto em outra máquina, o fluxo geral é:
-
-1. Disponibilizar um ambiente Linux.
-2. Instalar Git.
-3. Clonar o repositório.
-4. Entrar no diretório do projeto.
-5. Criar e ativar o ambiente virtual Python.
-6. Instalar as dependências através do `requirements.txt`.
-7. Instalar e configurar Docker.
-8. Instalar Ansible.
-9. Instalar Minikube e kubectl.
-10. Iniciar o cluster Kubernetes.
-11. Instalar Helm.
-12. Aplicar os manifestos Kubernetes presentes em `infra/kubernetes/`.
-13. Instalar o Prometheus utilizando Helm.
-14. Construir a imagem Docker do projeto.
-15. Executar o pipeline.
-
-Exemplo para obter o projeto:
-
-```bash
-git clone <https://github.com/luisfeob34/pi-data-science-track-field.git>
-cd pi-data-science-track-field
-```
-
-Após a preparação das ferramentas:
-
-```bash
-python3 -m venv .venv
-source .venv/bin/activate
-python -m pip install -r requirements.txt
-```
-
-Validar o Ansible:
-
-```bash
-ansible all -i infra/ansible/inventory.ini -m ping
-```
+isolado contendo Python, dependências e o código necessário para
+execução.
 
 Construir a imagem:
 
@@ -491,30 +554,281 @@ docker build -t pi-track-field .
 Executar:
 
 ```bash
-docker run --rm pi-track-field
+docker run --rm \
+  -v "$(pwd)/data/raw:/app/data/raw" \
+  pi-track-field
 ```
 
-## Validações realizadas
+---
+
+# Ansible
+
+Os arquivos de automação estão disponíveis em:
+
+```text
+infra/ansible/
+```
+
+Estrutura:
+
+```text
+infra/ansible/
+├── inventory.ini
+└── playbook.yml
+```
+
+O inventário utiliza a máquina Linux local:
+
+```text
+localhost
+```
+
+O Ansible é utilizado para automatizar tarefas de preparação do ambiente.
+
+## Testar comunicação
+
+```bash
+ansible all -i infra/ansible/inventory.ini -m ping
+```
+
+Resultado esperado:
+
+```text
+localhost | SUCCESS => {
+    "changed": false,
+    "ping": "pong"
+}
+```
+
+## Validar o playbook
+
+```bash
+ansible-playbook \
+  -i infra/ansible/inventory.ini \
+  infra/ansible/playbook.yml \
+  --syntax-check
+```
+
+## Executar o playbook
+
+```bash
+ansible-playbook \
+  -i infra/ansible/inventory.ini \
+  infra/ansible/playbook.yml \
+  --ask-become-pass
+```
+
+---
+
+# Kubernetes
+
+O Kubernetes é utilizado para orquestração dos containers e serviços
+da infraestrutura.
+
+No ambiente local, utilizamos Minikube com Docker como driver.
+
+```text
+Docker
+   |
+   v
+Minikube
+   |
+   v
+Kubernetes
+```
+
+## Iniciar o cluster
+
+```bash
+minikube start --driver=docker
+```
+
+## Verificar o cluster
+
+```bash
+minikube status
+```
+
+## Aplicar os recursos do projeto
+
+```bash
+kubectl apply -f infra/kubernetes/namespace.yml
+```
+
+## Verificar namespaces
+
+```bash
+kubectl get namespaces
+```
+
+O namespace utilizado pelo monitoramento é:
+
+```text
+monitoramento
+```
+
+---
+
+# Monitoramento com Prometheus
+
+O Prometheus é utilizado para monitorar a infraestrutura e coletar
+métricas dos serviços executados no Kubernetes.
+
+O Prometheus foi instalado utilizando Helm.
+
+## Adicionar o repositório
+
+```bash
+helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+```
+
+## Atualizar
+
+```bash
+helm repo update
+```
+
+## Instalar
+
+Em um ambiente no qual o Prometheus ainda não esteja instalado:
+
+```bash
+helm install prometheus prometheus-community/prometheus \
+  --namespace monitoramento
+```
+
+## Verificar
+
+```bash
+kubectl get pods -n monitoramento
+```
+
+Os componentes deverão apresentar o estado `Running` após a
+inicialização.
+
+## Acessar a interface
+
+```bash
+kubectl port-forward \
+  -n monitoramento \
+  svc/prometheus-server \
+  9090:80
+```
+
+Com o redirecionamento ativo, o Prometheus pode ser acessado localmente
+através da porta `9090`.
+
+---
+
+# Validações realizadas
 
 Durante a configuração do ambiente foram realizados os seguintes testes:
 
-- Execução do Python dentro do ambiente virtual.
-- Instalação das dependências pelo `requirements.txt`.
-- Comunicação do Ansible com o ambiente Linux (`ping: pong`).
-- Validação de sintaxe do playbook Ansible.
-- Execução de containers Docker.
-- Construção da imagem `pi-track-field`.
-- Execução do gerador de dados dentro do container.
-- Inicialização do Kubernetes através do Minikube.
-- Comunicação com o cluster através do kubectl.
-- Validação do manifesto Kubernetes.
-- Instalação do Prometheus através do Helm.
-- Verificação dos pods do Prometheus em estado `Running`.
-- Acesso à interface do Prometheus.
+- [x] Ambiente Linux Ubuntu através do WSL2
+- [x] Git
+- [x] GitHub
+- [x] Python 3.14
+- [x] Ambiente virtual Python
+- [x] Instalação das dependências através do `requirements.txt`
+- [x] Execução do gerador de dados
+- [x] Geração do arquivo `vendas_simuladas.csv`
+- [x] Comunicação do Ansible com o ambiente Linux
+- [x] Ansible retornando `ping: pong`
+- [x] Validação do playbook Ansible
+- [x] Docker
+- [x] Execução do `hello-world`
+- [x] Construção da imagem `pi-track-field`
+- [x] Execução do gerador dentro do Docker
+- [x] Minikube
+- [x] Kubernetes
+- [x] kubectl
+- [x] Namespace Kubernetes
+- [x] Helm
+- [x] Prometheus
+- [x] Pods do Prometheus em estado `Running`
+- [x] Acesso à interface do Prometheus
+- [x] Versionamento com Git
+- [x] Repositório armazenado no GitHub
 
-## Objetivo de reprodutibilidade
+---
 
-A combinação de Git, `requirements.txt`, Ansible, Docker, Kubernetes e
-documentação permite que o ambiente utilizado no desenvolvimento possa
-ser reconstruído em outra máquina com as ferramentas necessárias,
-reduzindo diferenças de configuração entre ambientes.
+# Reprodutibilidade
+
+O objetivo da infraestrutura DevOps é permitir que o projeto possa ser
+executado em diferentes computadores reduzindo diferenças entre os
+ambientes.
+
+Para executar apenas o gerador de dados em outro computador, são
+necessários:
+
+```text
+Linux
+  |
+  +---- Git
+  |
+  +---- Docker
+```
+
+Caso o computador utilize Windows, o Linux pode ser disponibilizado
+através do WSL2 com Ubuntu.
+
+O Docker utiliza o `Dockerfile` e o `requirements.txt` para criar o
+ambiente necessário automaticamente.
+
+A infraestrutura completa do projeto utiliza:
+
+```text
+Git / GitHub
+     |
+     +---- Versionamento
+     |
+Ansible
+     |
+     +---- Automação
+     |
+Docker
+     |
+     +---- Ambiente reproduzível
+     |
+Kubernetes / Minikube
+     |
+     +---- Orquestração
+     |
+Helm
+     |
+     +---- Gerenciamento
+     |
+Prometheus
+     |
+     +---- Monitoramento
+```
+
+Dessa forma, o projeto possui código versionado, dependências
+documentadas, ambiente reproduzível e infraestrutura organizada.
+
+---
+
+# Status atual
+
+Atualmente estão configurados e testados:
+
+- [x] Linux / Ubuntu / WSL2
+- [x] Git e GitHub
+- [x] Python
+- [x] Ambiente virtual
+- [x] Dependências Python
+- [x] Gerador de dados
+- [x] Ansible
+- [x] Docker
+- [x] Dockerfile
+- [x] Kubernetes
+- [x] Minikube
+- [x] kubectl
+- [x] Helm
+- [x] Prometheus
+- [x] Monitoramento
+- [x] Documentação
+- [x] Procedimento para execução em outro computador
+
+A infraestrutura poderá ser expandida conforme novos componentes forem
+adicionados ao pipeline durante o desenvolvimento do projeto.
