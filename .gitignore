@@ -26,3 +26,6 @@ data/raw/*.csv
 
 # Instaladores locais
 *.deb
+
+# Ensaio do painel
+painel/estado/
