@@ -1,0 +1,5 @@
+raiz <- if (file.exists("R/dados.R")) normalizePath(".") else normalizePath("..")
+options(shiny.maxRequestSize = 20 * 1024^2)
+for (modulo in c("dados", "estatistica", "previsao", "visualizacao", "pipeline", "painel"))
+  source(file.path(raiz, "R", paste0(modulo, ".R")), local = TRUE, encoding = "UTF-8")
+shiny::shinyApp(ui = criar_ui(), server = criar_servidor(raiz))

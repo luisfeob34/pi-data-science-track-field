@@ -1,40 +1,17 @@
 ---
-- name: Configurar ambiente do PI Data Science Track & Field
+- name: Preparar o ambiente R e Shiny do projeto
   hosts: local
   become: true
-
   tasks:
-    - name: Atualizar cache de pacotes
-      apt:
+    - name: Instalar R, painel e ferramentas de teste
+      ansible.builtin.apt:
         update_cache: true
-
-    - name: Instalar Git
-      apt:
-        name: git
+        name:
+          - git
+          - r-base-core
+          - r-cran-shiny
+          - r-cran-ggplot2
+          - r-cran-plotly
+          - r-cran-dt
+          - r-cran-testthat
         state: present
-
-    - name: Instalar Python 3
-      apt:
-        name: python3
-        state: present
-
-    - name: Instalar pip
-      apt:
-        name: python3-pip
-        state: present
-
-    - name: Instalar suporte a ambiente virtual Python
-      apt:
-        name: python3-venv
-        state: present
-
-    - name: Instalar Docker
-      apt:
-        name: docker.io
-        state: present
-
-    - name: Garantir que o Docker esteja iniciado
-      service:
-        name: docker
-        state: started
-        enabled: true

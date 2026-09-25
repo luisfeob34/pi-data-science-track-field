@@ -18,3 +18,9 @@ __pycache__/
 data/processed/
 
 minikube_latest_amd64.deb
+
+.Rhistory
+.RData
+.Rproj.user/
+results/
+painel/estado/

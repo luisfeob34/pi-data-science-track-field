@@ -29,3 +29,9 @@ data/raw/*.csv
 
 # Ensaio do painel
 painel/estado/
+
+# R e saídas reproduzíveis
+.Rhistory
+.RData
+.Rproj.user/
+results/r/
