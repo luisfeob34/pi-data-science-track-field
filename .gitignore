@@ -35,3 +35,11 @@ painel/estado/
 .RData
 .Rproj.user/
 results/r/
+
+# P1: estado local, planos, chaves e discos nunca entram no Git
+infraestrutura/.terraform/
+infraestrutura/*.tfstate*
+infraestrutura/*.tfplan
+infraestrutura/*.auto.tfvars.json
+infraestrutura/evidencias/
+simulador/saidas/

@@ -1,5 +1,5 @@
 ---
-- name: Preparar o ambiente R e Shiny do projeto
+- name: Preparar o ambiente R e Shiny local (opcional, fora da VM da P1)
   hosts: local
   become: true
   tasks:

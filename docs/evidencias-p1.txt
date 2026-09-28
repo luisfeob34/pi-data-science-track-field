@@ -1,0 +1,87 @@
+Mon Sep 28 15:43:33 UTC 2026
+===== criar =====
+
+Initializing the backend...
+
+Initializing provider plugins...
+- terraform.io/builtin/terraform is built in to OpenTofu
+
+OpenTofu has been successfully initialized!
+
+You may now begin working with OpenTofu. Try running "tofu plan" to see
+any changes that are required for your infrastructure. All OpenTofu commands
+should now work.
+
+If you ever set or change modules or backend configuration for OpenTofu,
+rerun this command to reinitialize your working directory. If you forget, other
+commands will detect it and remind you to do so if necessary.
+terraform_data.vm: Refreshing state... [id=7bd43f34-a13f-d488-ace3-f8aca8b7d5d0]
+
+No changes. Your infrastructure matches the configuration.
+
+OpenTofu has compared your real infrastructure against your configuration and
+found no differences, so no changes are needed.
+
+Apply complete! Resources: 0 added, 0 changed, 0 destroyed.
+
+Outputs:
+
+dados_na_vm = "/opt/pi-track-field/dados"
+ssh = "ssh -i /home/lipe/.local/share/pi-track-field-p1/id_ed25519 -p 2222 pi@127.0.0.1"
+VM ja esta em execucao.
+Aguardando SSH da VM (ate 15 minutos)...
+status: done
+===== configurar =====
+Aguardando SSH da VM (ate 15 minutos)...
+status: done
+
+PLAY [Preparar a VM da P1] *****************************************************
+
+TASK [Gathering Facts] *********************************************************
+ok: [vm_p1]
+
+TASK [Instalar R e Python para administracao pelo Ansible] *********************
+changed: [vm_p1]
+
+TASK [Criar pastas do simulador e dos dados] ***********************************
+changed: [vm_p1] => (item=/opt/pi-track-field)
+changed: [vm_p1] => (item=/opt/pi-track-field/R)
+changed: [vm_p1] => (item=/opt/pi-track-field/simulador)
+changed: [vm_p1] => (item=/opt/pi-track-field/dados)
+
+PLAY RECAP *********************************************************************
+vm_p1                      : ok=3    changed=2    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
+
+===== transferir =====
+Simulador e regras R transferidos por SCP.
+===== simular =====
+/opt/pi-track-field/dados/exec-20260928T155323-d533c5857cb/vendas.csv 
+/opt/pi-track-field/dados/exec-20260928T155332-dbf41239e0f/vendas.csv 
+/opt/pi-track-field/dados/exec-20260928T155323-d533c5857cb/vendas.csv: OK
+pi-track-field
+6.8.0-142-generic
+status: done
+exec-20260928T155323-d533c5857cb : 1000 registros validos
+exec-20260928T155332-dbf41239e0f : 1000 registros validos
+OK: 2 arquivos; 2000 registros; identificadores compostos unicos.
+Aguardando SSH da VM (ate 15 minutos)...
+status: done
+
+PLAY [Preparar a VM da P1] *****************************************************
+
+TASK [Gathering Facts] *********************************************************
+ok: [vm_p1]
+
+TASK [Instalar R e Python para administracao pelo Ansible] *********************
+ok: [vm_p1]
+
+TASK [Criar pastas do simulador e dos dados] ***********************************
+ok: [vm_p1] => (item=/opt/pi-track-field)
+ok: [vm_p1] => (item=/opt/pi-track-field/R)
+ok: [vm_p1] => (item=/opt/pi-track-field/simulador)
+ok: [vm_p1] => (item=/opt/pi-track-field/dados)
+
+PLAY RECAP *********************************************************************
+vm_p1                      : ok=3    changed=0    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
+
+Concluido: dados preservados e Ansible idempotente (changed=0).

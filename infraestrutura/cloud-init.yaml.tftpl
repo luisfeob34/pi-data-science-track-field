@@ -1,0 +1,14 @@
+#cloud-config
+hostname: pi-track-field
+manage_etc_hosts: true
+users:
+  - name: pi
+    groups: [sudo]
+    shell: /bin/bash
+    sudo: ALL=(ALL) NOPASSWD:ALL
+    lock_passwd: true
+    ssh_authorized_keys:
+      - ${jsonencode(public_key)}
+ssh_pwauth: false
+disable_root: true
+package_update: false

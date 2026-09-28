@@ -1,0 +1,30 @@
+---
+- name: Preparar a VM da P1
+  hosts: p1
+  become: true
+  vars:
+    ansible_timeout: 60
+  tasks:
+    - name: Instalar R e Python para administracao pelo Ansible
+      ansible.builtin.apt:
+        name:
+          - r-base-core
+          - python3
+        state: present
+        update_cache: true
+        cache_valid_time: 86400
+        install_recommends: false
+        lock_timeout: 600
+
+    - name: Criar pastas do simulador e dos dados
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: directory
+        owner: pi
+        group: pi
+        mode: '0755'
+      loop:
+        - /opt/pi-track-field
+        - /opt/pi-track-field/R
+        - /opt/pi-track-field/simulador
+        - /opt/pi-track-field/dados

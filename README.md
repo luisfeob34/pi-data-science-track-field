@@ -3,6 +3,21 @@
 Projeto acadêmico de análise de vendas com **R**, **Shiny**, **Plotly** e **ggplot2**.
 A base padrão contém vendas simuladas de 2026; não representa a operação real da empresa.
 
+## Entrega da P1
+
+O roteiro de VM Linux com OpenTofu, cloud-init, SSH, Ansible e simulador em R está em
+[infraestrutura/README.md](infraestrutura/README.md). No Ubuntu/WSL:
+
+```bash
+bash infraestrutura/preparar-host.sh
+bash infraestrutura/p1.sh demonstrar
+```
+
+O segundo comando executa as etapas e registra evidências locais. Consulte o roteiro
+para acesso à VM, cópia dos dados e desligamento seguro.
+Veja também o [relatório de validação da P1](docs/validacao-p1.md) e o
+[roteiro para apresentar](docs/apresentacao-p1.md).
+
 ## Executar no Ubuntu / WSL
 
 No terminal Ubuntu, instale os requisitos uma vez:
@@ -120,7 +135,9 @@ tests/                   Testes automatizados
 data/raw/                CSV de entrada local
 results/r/               Execuções do pipeline R
 docs/                    Metodologia e registro da migração
-infra/                   Configuração opcional de infraestrutura
+infraestrutura/          OpenTofu, cloud-init, Ansible e roteiro da P1
+infraestrutura/opcional/ Configurações locais e Kubernetes anteriores
+simulador/               Geração persistente de CSVs em R dentro da VM
 ```
 
 ## Testes
@@ -137,7 +154,8 @@ Ambiente validado: Shiny 1.10.0, ggplot2 4.0.2, Plotly 4.10.4, DT 0.34.0 e testt
 As versões completas do R e das dependências ficam no `sessionInfo.txt` de cada execução.
 No Windows com Edge instalado, `powershell -File tests/validar_navegador.ps1` confere
 o painel já iniciado e captura as telas em `results/r/`. A suíte R é independente desse teste visual.
-O Dockerfile e o playbook foram adaptados, mas não foram executados nesta validação.
+O Dockerfile não foi executado nesta validação do painel. A infraestrutura da P1
+tem seu próprio roteiro de validação e evidências em `infraestrutura/`.
 
 ## Docker (opcional)
 
