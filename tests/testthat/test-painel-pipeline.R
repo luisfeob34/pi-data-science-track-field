@@ -34,7 +34,7 @@ testthat::test_that("Shiny aplica filtros e atualiza testes e horizonte reativam
     testthat::expect_match(output$nota_previsao$html, "Comparação manual")
     session$setInputs(modelo_previsao = "Automático")
     # Força a conversão real dos gráficos em widgets, além do cálculo dos dados.
-    testthat::expect_true(nzchar(output$ranking))
+    testthat::expect_match(output$ranking$html, "ranking-vivo")
     testthat::expect_true(nzchar(output$previsao_grafico))
     testthat::expect_match(output$destaques$html, "Produto com mais receita")
     testthat::expect_match(output$leituras$html, "O gasto por pedido")
