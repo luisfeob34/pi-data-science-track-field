@@ -3,13 +3,13 @@ gravar_csv <- function(x, caminho) {
 }
 
 executar_pipeline <- function(brutos, raiz, horizonte = 3L, cobertura = NULL,
-                              meses_sem_venda_zero = FALSE) {
+                              meses_sem_venda_zero = FALSE, modelo_previsao = "Automático") {
   tratamento <- tratar_vendas(brutos)
   x <- tratamento$dados
   if (!nrow(x)) stop("Nenhuma venda válida. Consulte as regras do CSV antes de executar novamente.")
   serie <- serie_mensal(x, cobertura, meses_sem_venda_zero)
   testes <- testes_estatisticos(x)
-  previsao <- prever_vendas(serie, horizonte)
+  previsao <- prever_vendas(serie, horizonte, modelo_previsao)
   pasta <- file.path(raiz, "results", "r")
   dir.create(pasta, recursive = TRUE, showWarnings = FALSE)
   temporario <- tempfile(".preparando-", tmpdir = pasta)
@@ -18,6 +18,8 @@ executar_pipeline <- function(brutos, raiz, horizonte = 3L, cobertura = NULL,
   gravar_csv(x, file.path(temporario, "vendas_processadas.csv"))
   gravar_csv(tratamento$auditoria, file.path(temporario, "qualidade.csv"))
   gravar_csv(descrever_vendas(x), file.path(temporario, "estatisticas_descritivas.csv"))
+  gravar_csv(frequencias_vendas(x), file.path(temporario, "frequencias.csv"))
+  gravar_csv(probabilidades_vendas(x), file.path(temporario, "probabilidades.csv"))
   gravar_csv(testes, file.path(temporario, "testes_estatisticos.csv"))
   gravar_csv(serie, file.path(temporario, "faturamento_mensal.csv"))
   for (item in list(c("Produto", "produto"), c("Categoria", "categoria"), c("Canal de Venda", "canal"),
@@ -38,7 +40,7 @@ executar_pipeline <- function(brutos, raiz, horizonte = 3L, cobertura = NULL,
     "## Testes", "Kruskal-Wallis, Spearman e qui-quadrado. Ajuste de Holm; alfa de 5%.",
     "Pedidos devem ser independentes. Comparações exploratórias não demonstram causalidade.",
     "A correção cobre os testes desta execução, não sucessivas buscas por filtros.", "",
-    "## Previsão", previsao$motivo, paste("Modelo:", previsao$modelo),
+    "## Previsão", previsao$motivo, paste("Modelo:", previsao$modelo), previsao$explicacao,
     "Meses parciais excluídos do ajuste; ano e mês permanecem separados.",
     paste("Meses sem registro interpretados como zero:", meses_sem_venda_zero),
     "Intervalos dependem das hipóteses dos modelos e não garantem resultados futuros.",

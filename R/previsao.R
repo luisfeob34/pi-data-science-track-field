@@ -30,7 +30,10 @@ prever_modelo <- function(y, h, modelo) {
   data.frame(Previsao = pmax(0, centro), Inferior = pmax(0, centro - margem), Superior = pmax(0, centro + margem))
 }
 
-prever_vendas <- function(serie, horizonte = 3L) {
+prever_vendas <- function(serie, horizonte = 3L, modelo = "Automático") {
+  modelos <- c("Média histórica", "Último mês", "Tendência linear")
+  if (length(modelo) != 1 || is.na(modelo) || !modelo %in% c("Automático", modelos))
+    stop("Modelo de previsão inválido.")
   if (length(horizonte) != 1 || !is.finite(horizonte) || horizonte < 1 || horizonte > 6 || horizonte != floor(horizonte))
     stop("Horizonte deve ser um inteiro entre 1 e 6 meses.")
   treino <- serie[serie$Completo, , drop = FALSE]
@@ -47,7 +50,6 @@ prever_vendas <- function(serie, horizonte = 3L) {
   y <- treino$Faturamento
   # Origens móveis: só os meses anteriores entram em cada ajuste. Avaliação de um passo.
   origens <- seq.int(max(5L, length(y) - 5L), length(y) - 1L)
-  modelos <- c("Média histórica", "Último mês", "Tendência linear")
   erros <- do.call(rbind, lapply(modelos, function(modelo) do.call(rbind, lapply(origens, function(i) {
     pred <- prever_modelo(y[seq_len(i)], 1L, modelo)$Previsao[1]
     data.frame(Modelo = modelo, Treino_ate = treino$Data[i], Teste_em = treino$Data[i + 1L],
@@ -58,10 +60,30 @@ prever_vendas <- function(serie, horizonte = 3L) {
     data.frame(Modelo = modelo, MAE = mean(abs(e)), RMSE = sqrt(mean(e^2)), Origens = length(e))
   }))
   validacao <- validacao[order(validacao$MAE, match(validacao$Modelo, modelos)), ]
-  melhor <- validacao$Modelo[1]
+  recomendado <- validacao$Modelo[1]
+  melhor <- if (modelo == "Automático") recomendado else modelo
   pred <- prever_modelo(y, horizonte, melhor)
+  explicacao <- switch(melhor,
+    "Média histórica" = paste("A média histórica teve o menor erro nos testes com meses anteriores.",
+      "Esse modelo usa a mesma estimativa central para cada mês futuro.",
+      "Isso não significa que as vendas reais serão iguais: elas podem variar dentro ou fora da faixa estimada."),
+    "Último mês" = paste("Repetir o valor do último mês teve o menor erro nos testes com meses anteriores.",
+      "A estimativa central permanece igual, enquanto a faixa de incerteza aumenta com o prazo.",
+      "As vendas reais podem variar."),
+    "Tendência linear" = paste("A tendência linear teve o menor erro nos testes com meses anteriores.",
+      "Ela projeta a direção observada no histórico; essa tendência pode não continuar no futuro."))
+  if (modelo != "Automático") {
+    explicacao <- paste(
+      switch(melhor,
+        "Média histórica" = "Comparação manual: usa a mesma média nos meses futuros.",
+        "Último mês" = "Comparação manual: repete o último mês, com incerteza crescente.",
+        "Tendência linear" = "Comparação manual: projeta a direção do histórico, que pode não continuar."),
+      "O modelo com menor erro nos testes foi", paste0(recomendado, "."),
+      if (melhor != recomendado) "O modelo escolhido teve erro maior; esta comparação não substitui a recomendação automática." else "")
+  }
   pred <- cbind(Data = seq(tail(treino$Data, 1), by = "month", length.out = horizonte + 1L)[-1], pred)
-  list(disponivel = TRUE, motivo = paste("Modelo escolhido por menor MAE em", length(origens),
+  list(disponivel = TRUE, motivo = paste(if (modelo == "Automático") "Modelo escolhido por menor MAE em" else "Modelo escolhido manualmente; comparação por MAE em", length(origens),
     "origens temporais de um passo. Intervalos nominais de 95%; não incluem incerteza da seleção do modelo."),
-    historico = serie, previsao = pred, validacao = validacao, erros = erros, modelo = melhor)
+    historico = serie, previsao = pred, validacao = validacao, erros = erros, modelo = melhor,
+    explicacao = explicacao, recomendado = recomendado)
 }

@@ -4,6 +4,9 @@ colunas_vendas <- c("ID Pedido", "Data da Venda", "Cliente", "Produto", "Categor
 meses_pt <- c("Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho",
               "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro")
 
+# Centavos, empate para o par. Remove residuos binarios antes do arredondamento.
+arredondar_moeda <- function(x) round(round(x * 100, 6)) / 100
+
 ler_vendas <- function(caminho) {
   if (!file.exists(caminho)) stop("CSV de vendas não encontrado: ", caminho)
   x <- read.csv(caminho, check.names = FALSE, colClasses = "character",
@@ -15,7 +18,9 @@ ler_vendas <- function(caminho) {
 tratar_vendas <- function(x) {
   faltantes <- setdiff(colunas_vendas, names(x))
   if (length(faltantes)) stop("Colunas obrigatórias ausentes: ", paste(faltantes, collapse = ", "))
-  x <- x[, colunas_vendas, drop = FALSE]
+  # A identidade do pedido pertence ao lote. CSVs antigos continuam aceitos.
+  if (!"ID Execucao" %in% names(x)) x[["ID Execucao"]] <- rep("avulso", nrow(x))
+  x <- x[, c(colunas_vendas, "ID Execucao"), drop = FALSE]
   recebidos <- nrow(x)
   for (nm in names(x)) x[[nm]] <- trimws(as.character(x[[nm]]))
   duplicados <- sum(duplicated(x))
@@ -37,10 +42,11 @@ tratar_vendas <- function(x) {
   limites_invalidos <- descartar(x[["Preço Unitário"]] <= 0 | x$Quantidade <= 0 |
     x$Quantidade != floor(x$Quantidade) | x$Desconto < 0 | x$Desconto > 1 | x[["Valor Total"]] < 0)
   # IDs divergentes são ambíguos: não escolher arbitrariamente um dos pedidos.
-  ids_conflitantes <- descartar(duplicated(x[["ID Pedido"]]) | duplicated(x[["ID Pedido"]], fromLast = TRUE))
-  x[["Valor Bruto"]] <- round(x[["Preço Unitário"]] * x$Quantidade, 2)
-  x[["Valor Desconto"]] <- round(x[["Valor Bruto"]] * x$Desconto, 2)
-  total <- round(x[["Valor Bruto"]] - x[["Valor Desconto"]], 2)
+  chave <- x[c("ID Execucao", "ID Pedido")]
+  ids_conflitantes <- descartar(duplicated(chave) | duplicated(chave, fromLast = TRUE))
+  x[["Valor Bruto"]] <- arredondar_moeda(x[["Preço Unitário"]] * x$Quantidade)
+  x[["Valor Desconto"]] <- arredondar_moeda(x[["Valor Bruto"]] * x$Desconto)
+  total <- arredondar_moeda(x[["Valor Bruto"]] - x[["Valor Desconto"]])
   totais_corrigidos <- sum(abs(x[["Valor Total"]] - total) > 0.011)
   x[["Valor Total"]] <- total
   x[["Possui Desconto"]] <- ifelse(x$Desconto > 0, "Sim", "Não")
@@ -113,11 +119,11 @@ gerar_vendas <- function(n = 1000L, semente = 42L) {
     datas <- as.Date("2026-01-01") + sample(0:364, n, replace = TRUE)
     quantidade <- sample(1:5, n, replace = TRUE)
     desconto <- sample(c(0, .05, .10, .15), n, replace = TRUE)
-    bruto <- round(precos[ids] * quantidade, 2)
+    bruto <- arredondar_moeda(precos[ids] * quantidade)
     x <- data.frame(seq_len(n), as.character(datas), sprintf("Cliente_%05d", seq_len(n)),
       produtos[ids], categorias[ids], sample(c("Loja Física", "E-commerce", "Marketplace"), n, TRUE),
       sample(c("Norte", "Nordeste", "Centro-Oeste", "Sudeste", "Sul"), n, TRUE),
-      precos[ids], quantidade, desconto, round(bruto - round(bruto * desconto, 2), 2), check.names = FALSE)
+      precos[ids], quantidade, desconto, arredondar_moeda(bruto - arredondar_moeda(bruto * desconto)), check.names = FALSE)
     names(x) <- colunas_vendas
     x
   })

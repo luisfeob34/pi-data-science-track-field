@@ -26,6 +26,8 @@ criar_ui <- function() {
         shiny::tags$details(class = "detalhes",
         shiny::tags$summary("Trocar dados ou criar demonstração"),
         shiny::textOutput("fonte"),
+        shiny::actionButton("carregar_spark", "Carregar última execução Spark", class = "btn-block"),
+        shiny::textOutput("estado_pipeline"),
         shiny::fileInput("arquivo", "Carregar arquivo de vendas", accept = ".csv", buttonLabel = "Escolher", placeholder = "Nenhum arquivo"),
         shiny::helpText("Use as 11 colunas da base de vendas. A importação fica nesta sessão e preserva o arquivo original."),
         shiny::numericInput("quantidade", "Pedidos na simulação", value = 1000, min = 20, max = 100000, step = 100),
@@ -59,10 +61,19 @@ criar_ui <- function() {
             shiny::p("Testes com ajuste de Holm (5%). Pressupõem pedidos independentes. A correção não cobre buscas repetidas por filtros."),
             DT::DTOutput("testes"),
             shiny::downloadButton("baixar_testes", "Baixar testes"),
-            shiny::h3("Estatísticas descritivas"), DT::DTOutput("descritivas"))),
+            shiny::h3("Estatísticas descritivas"), DT::DTOutput("descritivas"),
+            shiny::h3("Frequências e proporções"), DT::DTOutput("frequencias"),
+            shiny::h3("Probabilidades observadas"),
+            shiny::p("Proporções dentro dos pedidos selecionados. Não são previsões nem efeitos causais."),
+            DT::DTOutput("probabilidades"))),
           shiny::tabPanel("Próximos meses", value = "previsoes",
             shiny::h3("Quanto podemos esperar em vendas?"),
             shiny::sliderInput("horizonte", "Meses a projetar", min = 1, max = 6, value = 3),
+            shiny::radioButtons("modelo_previsao", "Como projetar os próximos meses?",
+              choices = c("Automático: menor erro nos testes" = "Automático",
+                "Comparar tendência de crescimento ou queda" = "Tendência linear",
+                "Comparar média histórica" = "Média histórica", "Comparar último mês" = "Último mês"),
+              selected = "Automático"),
             shiny::uiOutput("nota_previsao"), plotly::plotlyOutput("previsao_grafico", height = "390px"),
             shiny::helpText("A linha verde mostra as vendas registradas. A linha dourada é a estimativa; a faixa ao redor mostra a incerteza. Não é uma garantia de vendas."),
             DT::DTOutput("previsao_tabela"), shiny::downloadButton("baixar_previsao", "Baixar previsão"),
@@ -101,6 +112,16 @@ criar_servidor <- function(raiz) {
     }
     base <- shiny::reactiveVal(estado_inicial)
     fonte <- shiny::reactiveVal(fonte_inicial)
+    output$estado_pipeline <- shiny::renderText({
+      shiny::invalidateLater(10000, session)
+      arquivos <- list.files(file.path(raiz, "results", "monitoramento"), pattern = "[.]csv$", full.names = TRUE)
+      if (!length(arquivos)) return("Nenhuma execução Big Data registrada.")
+      ultimo <- arquivos[which.max(file.info(arquivos)$mtime)]
+      tryCatch({
+        z <- read.csv(ultimo)
+        paste("Último pipeline:", z$Estado[1], "· etapa", z$Etapa[1], "·", z$Duracao_segundos[1], "segundos")
+      }, error = function(e) "Registro do pipeline ainda em atualização.")
+    })
     output$periodo_ui <- shiny::renderUI({
       datas <- base()$dados[["Data da Venda"]]
       shiny::dateRangeInput("periodo", "Período", start = min(datas), end = max(datas),
@@ -129,6 +150,22 @@ criar_servidor <- function(raiz) {
         aceitar_base(ler_vendas(input$arquivo$datapath), paste("CSV importado:", input$arquivo$name))
       }, error = function(e) shiny::showNotification(conditionMessage(e), type = "error", duration = 10))
     })
+    carregar_resultado_spark <- function() {
+      z <- ultima_base_spark(raiz)
+      if (is.null(z)) stop("Execute o pipeline Big Data antes de carregar os resultados.")
+      aceitar_base(ler_vendas(z$arquivo), paste("Spark:", z$id, "· dados simulados"))
+    }
+    shiny::observeEvent(input$carregar_spark, {
+      tryCatch(carregar_resultado_spark(), error = function(e)
+        shiny::showNotification(conditionMessage(e), type = "error", duration = 15))
+    })
+    shiny::observeEvent(TRUE, {
+      if (file.exists(file.path(raiz, "results", "bigdata", "ultima.txt")))
+        tryCatch(carregar_resultado_spark(), error = function(e)
+          shiny::showNotification(conditionMessage(e), type = "warning", duration = 15))
+    }, once = TRUE)
+    output$frequencias <- DT::renderDT(frequencias_vendas(dados()), rownames = FALSE)
+    output$probabilidades <- DT::renderDT(probabilidades_vendas(dados()), rownames = FALSE)
     shiny::observeEvent(input$gerar, {
       tryCatch({
         if (is.null(input$quantidade) || input$quantidade < 20 || input$quantidade > 100000)
@@ -151,7 +188,8 @@ criar_servidor <- function(raiz) {
     })
     serie <- shiny::reactive(serie_mensal(dados(), cobertura(), isTRUE(input$meses_zero)))
     testes <- shiny::reactive(testes_estatisticos(dados()))
-    previsao <- shiny::reactive(prever_vendas(serie(), if (is.null(input$horizonte)) 3 else input$horizonte))
+    previsao <- shiny::reactive(prever_vendas(serie(), if (is.null(input$horizonte)) 3 else input$horizonte,
+      if (is.null(input$modelo_previsao)) "Automático" else input$modelo_previsao))
     tabela <- function(x, pagina = 8) DT::datatable(x, rownames = FALSE, escape = TRUE,
       options = list(pageLength = pagina, scrollX = TRUE, language = list(
         search = "Buscar:", lengthMenu = "Mostrar _MENU_ linhas", info = "_START_–_END_ de _TOTAL_",
@@ -239,7 +277,9 @@ criar_servidor <- function(raiz) {
       shiny::div(class = "resumo-previsao", shiny::span("Estimativa para o próximo mês completo após o histórico usado"),
         shiny::strong(moeda(primeiro$Previsao)),
         shiny::p(paste(format(primeiro$Data, "%m/%Y"), "· Faixa estimada:", moeda(primeiro$Inferior), "a", moeda(primeiro$Superior))),
-        shiny::p("Estimativa baseada nas vendas anteriores. Quanto maior a faixa, maior a incerteza."))
+        shiny::p(paste("Modelo utilizado:", p$modelo)),
+        shiny::p(p$explicacao),
+        shiny::p("Quanto maior a faixa, maior a incerteza. A base padrão contém vendas simuladas."))
     })
     output$metodo_previsao <- shiny::renderText(previsao()$motivo)
     output$previsao_grafico <- plotly::renderPlotly(interativo_previsao(previsao()))
@@ -265,7 +305,8 @@ criar_servidor <- function(raiz) {
       shiny::req(dados())
       tryCatch(shiny::withProgress(message = "Salvando análise", value = .2, {
         resultado <- executar_pipeline(dados(), raiz, if (is.null(input$horizonte)) 3 else input$horizonte,
-                                        cobertura(), isTRUE(input$meses_zero))
+                                        cobertura(), isTRUE(input$meses_zero),
+                                        if (is.null(input$modelo_previsao)) "Automático" else input$modelo_previsao)
         shiny::showNotification(paste("Análise salva em", resultado$pasta), type = "message", duration = 12)
       }), error = function(e) shiny::showNotification(conditionMessage(e), type = "error"))
     })

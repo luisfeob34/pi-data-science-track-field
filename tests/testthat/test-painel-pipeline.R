@@ -3,7 +3,9 @@ testthat::test_that("pipeline publica arquivos coerentes sem sobrescrever a exec
   dir.create(pasta)
   on.exit(unlink(pasta, recursive = TRUE))
   brutos <- gerar_vendas(1000)
-  resultado <- executar_pipeline(brutos, pasta)
+  resultado <- executar_pipeline(brutos, pasta, modelo_previsao = "Tendência linear")
+  testthat::expect_equal(resultado$previsao$modelo, "Tendência linear")
+  testthat::expect_true(any(grepl("Comparação manual", readLines(file.path(resultado$pasta, "relatorio.md")))))
   esperado <- c("vendas_processadas.csv", "testes_estatisticos.csv", "qualidade.csv", "previsao.csv",
     "validacao_modelos.csv", "backtest.csv", "relatorio.md", "ranking.png", "mensal.png", "previsao.png")
   testthat::expect_true(all(file.exists(file.path(resultado$pasta, esperado))))
@@ -27,6 +29,10 @@ testthat::test_that("Shiny aplica filtros e atualiza testes e horizonte reativam
     session$setInputs(categorias = character(), horizonte = 6)
     testthat::expect_equal(nrow(dados()), total)
     testthat::expect_equal(nrow(previsao()$previsao), 6L)
+    session$setInputs(modelo_previsao = "Tendência linear")
+    testthat::expect_equal(previsao()$modelo, "Tendência linear")
+    testthat::expect_match(output$nota_previsao$html, "Comparação manual")
+    session$setInputs(modelo_previsao = "Automático")
     # Força a conversão real dos gráficos em widgets, além do cálculo dos dados.
     testthat::expect_true(nzchar(output$ranking))
     testthat::expect_true(nzchar(output$previsao_grafico))

@@ -43,3 +43,9 @@ infraestrutura/*.tfplan
 infraestrutura/*.auto.tfvars.json
 infraestrutura/evidencias/
 simulador/saidas/
+data/lake/
+results/bigdata/
+results/monitoramento/
+artifacts/
+metastore_db/
+derby.log

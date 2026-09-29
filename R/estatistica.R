@@ -46,6 +46,8 @@ descrever_vendas <- function(x) {
   do.call(rbind, lapply(campos, function(campo) {
     y <- x[[campo]]
     data.frame(Variavel = campo, N = length(y), Media = if (length(y)) mean(y) else NA_real_,
+      Moda = moda_descritiva(y),
+      Variancia = if (length(y) > 1) var(y) else NA_real_,
       Desvio = if (length(y) > 1) sd(y) else NA_real_,
       Minimo = if (length(y)) min(y) else NA_real_,
       Q1 = if (length(y)) unname(quantile(y, .25)) else NA_real_,
@@ -53,4 +55,33 @@ descrever_vendas <- function(x) {
       Q3 = if (length(y)) unname(quantile(y, .75)) else NA_real_,
       Maximo = if (length(y)) max(y) else NA_real_)
   }))
+}
+
+moda_descritiva <- function(y) {
+  if (!length(y)) return(NA_character_)
+  tab <- table(y)
+  if (max(tab) == 1) return("Sem moda")
+  paste(names(tab)[tab == max(tab)], collapse = "; ")
+}
+
+frequencias_vendas <- function(x) {
+  do.call(rbind, lapply(c("Categoria", "Canal de Venda", "Região"), function(campo) {
+    tab <- table(x[[campo]])
+    data.frame(Variavel = rep(campo, length(tab)), Grupo = names(tab), Frequencia = as.integer(tab),
+      Proporcao = as.numeric(tab) / max(1, sum(tab)))
+  }))
+}
+
+probabilidades_vendas <- function(x) {
+  # Frequencias relativas observadas, nao probabilidades causais ou previsoes.
+  evento <- list(x[["Canal de Venda"]] == "E-commerce", x$Desconto > 0,
+    x[["Valor Total"]] >= 500,
+    x[["Canal de Venda"]] == "E-commerce" & x$Desconto > 0,
+    x[["Valor Total"]] >= 500 & x$Desconto > 0)
+  denominador <- c(rep(nrow(x), 4), sum(x$Desconto > 0))
+  favoraveis <- vapply(evento, sum, numeric(1))
+  data.frame(Evento = c("Compra por E-commerce", "Pedido com desconto", "Pedido de pelo menos R$ 500",
+    "E-commerce e desconto", "Pelo menos R$ 500 dado que houve desconto"),
+    Favoraveis = favoraveis, Base = denominador,
+    Probabilidade_empirica = ifelse(denominador > 0, favoraveis / denominador, NA_real_))
 }
