@@ -42,11 +42,16 @@ criar_ui <- function() {
             shiny::h3("Destaques do período"),
             shiny::uiOutput("destaques"),
             shiny::h3("De onde vêm as vendas?"),
-            shiny::fluidRow(
-              shiny::column(4, shiny::selectInput("dimensao", "Comparar por", c("Produto", "Categoria", "Canal de Venda", "Região"))),
-              shiny::column(4, shiny::selectInput("metrica", "O que mostrar", c("Total vendido (R$)" = "Faturamento", "Número de pedidos" = "Pedidos", "Itens vendidos" = "Itens", "Valor médio por pedido" = "Ticket"))),
-              shiny::column(4, shiny::sliderInput("top", "Mostrar os primeiros", min = 3, max = 20, value = 10))),
-            plotly::plotlyOutput("ranking", height = "410px"),
+            shiny::div(class = "controles-comparar",
+              shiny::div(class = "escolha-comparar",
+                shiny::radioButtons("dimensao", "Comparar por",
+                  c("Produto", "Categoria", "Canal de Venda", "Região"), selected = "Produto")),
+              shiny::div(class = "escolha-comparar",
+                shiny::radioButtons("metrica", "O que mostrar",
+                  c("Total vendido (R$)" = "Faturamento", "Número de pedidos" = "Pedidos", "Itens vendidos" = "Itens", "Valor médio por pedido" = "Ticket"),
+                  selected = "Faturamento")),
+              shiny::sliderInput("top", "Mostrar os primeiros", min = 3, max = 20, value = 10)),
+            shiny::uiOutput("ranking"),
             shiny::h3("Como as vendas mudaram mês a mês?"),
             plotly::plotlyOutput("evolucao", height = "330px"),
             shiny::helpText("Passe o mouse para ver valores; arraste para ampliar. Meses parciais aparecem com marcadores abertos.")),
@@ -137,7 +142,10 @@ criar_servidor <- function(raiz) {
       shiny::updateSelectizeInput(session, "regioes", choices = sort(unique(x$Região)), selected = character())
     }
     shiny::observeEvent(base(), redefinir_filtros())
-    shiny::observeEvent(input$limpar, redefinir_filtros())
+    shiny::observeEvent(input$limpar, {
+      redefinir_filtros()
+      shiny::showNotification("Filtros limpos. A análise voltou ao período inteiro.", type = "message", duration = 4)
+    })
     aceitar_base <- function(brutos, descricao) {
       novo <- tratar_vendas(brutos)
       if (!nrow(novo$dados)) stop("O arquivo não contém pedidos válidos. A base anterior foi mantida.")
@@ -156,8 +164,12 @@ criar_servidor <- function(raiz) {
       aceitar_base(ler_vendas(z$arquivo), paste("Spark:", z$id, "· dados simulados"))
     }
     shiny::observeEvent(input$carregar_spark, {
-      tryCatch(carregar_resultado_spark(), error = function(e)
-        shiny::showNotification(conditionMessage(e), type = "error", duration = 15))
+      shiny::withProgress(message = "Carregando a última execução", value = .35, {
+        tryCatch({
+          carregar_resultado_spark()
+          shiny::showNotification("Resultados do Spark carregados.", type = "message", duration = 5)
+        }, error = function(e) shiny::showNotification(conditionMessage(e), type = "error", duration = 15))
+      })
     })
     shiny::observeEvent(TRUE, {
       if (file.exists(file.path(raiz, "results", "bigdata", "ultima.txt")))
@@ -167,13 +179,16 @@ criar_servidor <- function(raiz) {
     output$frequencias <- DT::renderDT(frequencias_vendas(dados()), rownames = FALSE)
     output$probabilidades <- DT::renderDT(probabilidades_vendas(dados()), rownames = FALSE)
     shiny::observeEvent(input$gerar, {
-      tryCatch({
-        if (is.null(input$quantidade) || input$quantidade < 20 || input$quantidade > 100000)
-          stop("Escolha entre 20 e 100.000 pedidos.")
-        if (is.null(input$semente) || !is.finite(input$semente) || input$semente < 1 || input$semente > 1000000 || input$semente != floor(input$semente))
-          stop("Escolha uma semente inteira entre 1 e 1.000.000.")
-        aceitar_base(gerar_vendas(input$quantidade, input$semente), paste("Simulação em R · semente", input$semente))
-      }, error = function(e) shiny::showNotification(conditionMessage(e), type = "error"))
+      shiny::withProgress(message = "Criando a demonstração", value = .4, {
+        tryCatch({
+          if (is.null(input$quantidade) || input$quantidade < 20 || input$quantidade > 100000)
+            stop("Escolha entre 20 e 100.000 pedidos.")
+          if (is.null(input$semente) || !is.finite(input$semente) || input$semente < 1 || input$semente > 1000000 || input$semente != floor(input$semente))
+            stop("Escolha uma semente inteira entre 1 e 1.000.000.")
+          aceitar_base(gerar_vendas(input$quantidade, input$semente), paste("Simulação em R · semente", input$semente))
+          shiny::showNotification(paste("Demonstração pronta, com", format(input$quantidade, big.mark = ".", decimal.mark = ","), "pedidos."), type = "message", duration = 5)
+        }, error = function(e) shiny::showNotification(conditionMessage(e), type = "error"))
+      })
     })
     dados <- shiny::reactive({
       x <- filtrar_vendas(base()$dados, input$periodo, input$categorias, input$canais, input$regioes)
@@ -260,9 +275,33 @@ criar_servidor <- function(raiz) {
         shiny::div(class = "leitura", shiny::h4(perguntas[i]), shiny::strong(titulo), shiny::p(complemento))
       }))
     })
-    output$ranking <- plotly::renderPlotly({
+    output$ranking <- shiny::renderUI({
       shiny::req(input$dimensao, input$metrica, input$top)
-      interativo_ranking(dados(), input$dimensao, input$metrica, input$top)
+      metrica <- input$metrica
+      a <- agregar_vendas(dados(), input$dimensao)
+      a <- head(a[order(a[[metrica]], decreasing = TRUE), ], input$top)
+      if (!nrow(a)) return(shiny::p("Nada para comparar neste recorte."))
+      maximo <- max(a[[metrica]], 1)
+      total <- sum(a[[metrica]])
+      titulo <- c(Faturamento = "Total vendido", Pedidos = "Pedidos", Itens = "Itens vendidos", Ticket = "Valor médio por pedido")[[metrica]]
+      formatar <- function(valor) if (metrica %in% c("Faturamento", "Ticket")) moeda(valor) else
+        format(round(valor), big.mark = ".", decimal.mark = ",")
+      shiny::div(class = "ranking-vivo", `aria-label` = paste(titulo, "por", tolower(input$dimensao)),
+        lapply(seq_len(nrow(a)), function(i) {
+          valor <- a[[metrica]][i]
+          parte <- if (total > 0) valor / total else 0
+          acesos <- max(1L, round(12 * valor / maximo))
+          shiny::tags$article(class = "rank-item", style = sprintf("--atraso:%sms", (i - 1) * 70),
+            shiny::span(class = "rank-pos", i),
+            shiny::div(class = "rank-corpo",
+              shiny::strong(a$Grupo[i]),
+              shiny::span(class = "rank-pontos", `aria-hidden` = "true", lapply(seq_len(12), function(ponto)
+                shiny::span(class = if (ponto <= acesos) "aceso" else "apagado",
+                  style = sprintf("--atraso:%sms", (i - 1) * 70 + ponto * 35))))),
+            shiny::div(class = "rank-valor",
+              shiny::span(formatar(valor)),
+              shiny::tags$small(paste0(formatC(100 * parte, digits = 1, format = "f", decimal.mark = ","), "% do recorte"))))
+        }))
     })
     output$evolucao <- plotly::renderPlotly(interativo_serie(serie()))
     output$distribuicao <- plotly::renderPlotly(interativo_distribuicao(dados()))
