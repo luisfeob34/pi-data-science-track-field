@@ -26,20 +26,70 @@ Se estiver no Windows, entre primeiro no Ubuntu/WSL. Não cole os comandos Bash 
 ```bash
 sudo apt update
 sudo apt install -y git
-cd ~
-git clone https://github.com/luisfeob34/pi-data-science-track-field.git PI-Data-Science-Track-Field
-cd ~/PI-Data-Science-Track-Field
+git clone https://github.com/luisfeob34/pi-data-science-track-field.git "$HOME/PI-Data-Science-Track-Field"
+cd "$HOME/PI-Data-Science-Track-Field"
+pwd
+ls
 ```
 
-O nome da pasta foi definido explicitamente para que os próximos comandos funcionem.
+O clone acima define **o local e o nome exatos da pasta**, independentemente de onde
+o terminal estava aberto. `$HOME` é a pasta pessoal do usuário conectado no Ubuntu;
+não substitua essa variável por `lipe`. Por exemplo, para um usuário chamado `maria`,
+o projeto ficará em `/home/maria/PI-Data-Science-Track-Field`.
+
+Confira a saída de `pwd`: ela deve terminar em `/PI-Data-Science-Track-Field`.
+O comando `ls` deve mostrar `README.md`, `R`, `painel`, `scripts` e `infraestrutura`.
+**Se o `cd` apresentar erro, não continue com os scripts: localize a pasta conforme abaixo.**
 Todos os comandos seguintes são executados **nessa pasta, no host Ubuntu**, salvo indicação contrária.
 As alterações mais recentes precisam ter sido enviadas ao GitHub no computador de origem antes do clone.
 Dados gerados, discos da VM e resultados locais não acompanham o clone: você os criará nas próximas etapas.
 
-Se já clonou anteriormente, entre na pasta e atualize:
+### Se o projeto já foi baixado em outro local
+
+No Ubuntu, maiúsculas e minúsculas fazem diferença. Se você usou apenas
+`git clone https://github.com/luisfeob34/pi-data-science-track-field.git`, sem informar
+o destino, a pasta criada se chama **`pi-data-science-track-field`**, em minúsculas,
+e fica dentro da pasta em que o terminal estava naquele momento.
+
+Se esse clone foi feito na sua pasta pessoal, entre assim:
 
 ```bash
-cd ~/PI-Data-Science-Track-Field
+cd "$HOME/pi-data-science-track-field"
+pwd
+ls
+```
+
+Se não souber onde baixou, procure na sua pasta pessoal:
+
+```bash
+find "$HOME" -maxdepth 5 -type d -iname 'pi-data-science-track-field*' 2>/dev/null
+```
+
+Copie o caminho encontrado e use `cd "caminho completo encontrado"`, substituindo
+todo o texto entre aspas pelo caminho real. As aspas permitem nomes com espaços.
+Outra opção é abrir a pasta do projeto no gerenciador de arquivos do Ubuntu e
+escolher **Abrir no terminal**; nesse caso, confira com `pwd` e `ls`, sem precisar de `cd`.
+Uma pasta extraída de ZIP pode terminar em `-main` e não conter o histórico Git;
+para seguir o fluxo de atualização com `git pull`, use um clone Git.
+
+**Ubuntu instalado diretamente:** não use `C:/Users/...` nem `/mnt/c/Users/...`.
+Esses caminhos não correspondem à pasta pessoal do Ubuntu.
+
+**Ubuntu no WSL:** o clone recomendado acima também funciona. Se o projeto estiver
+no disco do Windows, use o caminho real em `/mnt/c/...`. Somente no computador original
+do projeto, cuja pasta está na área de trabalho de `lipe`, o comando é:
+
+```bash
+cd "/mnt/c/Users/lipe/Desktop/PI-Data-Science-Track-Field"
+```
+
+Não copie esse caminho para outro computador sem conferir o usuário e o local da pasta.
+
+### Atualizar um clone existente
+
+Primeiro entre na pasta correta usando uma das opções acima. Depois execute:
+
+```bash
 git status
 git pull --ff-only
 ```
@@ -221,17 +271,20 @@ O painel pode consultar a exportação CSV já publicada mesmo com VM e HDFS des
 
 ## 10. Usar novamente em outro dia
 
+Os comandos `cd` desta seção usam o destino definido no clone da etapa 2.
+Se seu projeto já estava em outro local, use o caminho real que você conferiu nessa etapa.
+
 Para apenas consultar o painel com os dados já processados:
 
 ```bash
-cd ~/PI-Data-Science-Track-Field
+cd "$HOME/PI-Data-Science-Track-Field"
 bash painel/iniciar.sh
 ```
 
 Para gerar mais dados e atualizar a análise:
 
 ```bash
-cd ~/PI-Data-Science-Track-Field
+cd "$HOME/PI-Data-Science-Track-Field"
 bash infraestrutura/p1.sh iniciar
 bash infraestrutura/p1.sh transferir
 bash infraestrutura/p1.sh simular
@@ -321,7 +374,7 @@ a VM convidada usa Ubuntu 24.04. Os testes não representam uma instalação val
 
 | Situação | O que fazer |
 |---|---|
-| `No such file or directory` ao chamar um script | execute `pwd` e entre em `~/PI-Data-Science-Track-Field` |
+| `No such file or directory` no `cd` ou ao chamar um script | siga a localização da pasta na etapa 2; confira maiúsculas/minúsculas e confirme com `pwd` e `ls` |
 | Nenhum `vendas.csv` encontrado | confira o caminho informado por `baixar` e inclua a subpasta `dados` |
 | Aguardando SSH por vários minutos | acompanhe o console da VM; TCG pode demorar no primeiro boot |
 | Quer entrar na VM | execute `bash infraestrutura/p1.sh ssh`; use `exit` para voltar ao host |
