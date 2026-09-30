@@ -1,10 +1,13 @@
 ---
+# Configura os hosts do grupo p1, criado pelo inventário gerado em p1.sh.
 - name: Preparar a VM da P1
   hosts: p1
+  # Usa sudo para instalar pacotes e criar pastas em /opt.
   become: true
   vars:
     ansible_timeout: 60
   tasks:
+    # Mantém os pacotes presentes; reaplicações reutilizam o cache por até um dia.
     - name: Instalar R e Python para administracao pelo Ansible
       ansible.builtin.apt:
         name:
@@ -14,8 +17,10 @@
         update_cache: true
         cache_valid_time: 86400
         install_recommends: false
+        # Aguarda até dez minutos caso outro processo esteja usando o APT.
         lock_timeout: 600
 
+    # Dá ao usuário pi permissão para transferir scripts e gravar dados via SSH.
     - name: Criar pastas do simulador e dos dados
       ansible.builtin.file:
         path: "{{ item }}"

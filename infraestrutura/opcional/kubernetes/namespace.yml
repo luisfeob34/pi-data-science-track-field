@@ -1,3 +1,5 @@
+# Cria o namespace destinado aos recursos opcionais de monitoramento.
+# Este manifesto declara apenas o namespace; não instala serviços de monitoramento.
 apiVersion: v1
 kind: Namespace
 metadata:

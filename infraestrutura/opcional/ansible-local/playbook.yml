@@ -1,8 +1,11 @@
 ---
+# Prepara o computador local para executar o painel e os testes em R.
 - name: Preparar o ambiente R e Shiny local (opcional, fora da VM da P1)
   hosts: local
+  # A instalação pelo APT exige privilégios administrativos no próprio host.
   become: true
   tasks:
+    # Instala os pacotes da distribuição, incluindo visualizações e testes.
     - name: Instalar R, painel e ferramentas de teste
       ansible.builtin.apt:
         update_cache: true

@@ -1,6 +1,9 @@
 #cloud-config
+# Configuração inicial da VM; a primeira linha identifica o formato ao cloud-init.
+# Define o nome da máquina e mantém sua resolução no arquivo /etc/hosts.
 hostname: pi-track-field
 manage_etc_hosts: true
+# Cria o usuário usado pelo SSH e pelo Ansible, com sudo sem solicitação de senha.
 users:
   - name: pi
     groups: [sudo]
@@ -8,7 +11,10 @@ users:
     sudo: ALL=(ALL) NOPASSWD:ALL
     lock_passwd: true
     ssh_authorized_keys:
+      # O OpenTofu insere a chave pública como string válida em YAML.
       - ${jsonencode(public_key)}
+# Desabilita autenticação SSH por senha e acesso direto como root.
 ssh_pwauth: false
 disable_root: true
+# A atualização dos pacotes fica a cargo do playbook Ansible.
 package_update: false
