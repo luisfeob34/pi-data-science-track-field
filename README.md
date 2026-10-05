@@ -1,5 +1,35 @@
 # PI Data Science · Track & Field — guia único de execução
 
+Integrantes do Grupo 15:
+
+Gustavo Oliveira Luna Nascimento
+RA: 24000461
+E-mail: gustavo.o.nascimento@sou.unifeob.edu.br
+
+Miguel Turatti Quirino 
+RA: 24000776
+E-MAIL: miguel.quirino@sou.unifeob.edu.br
+
+José Eduardo de Paula Sorg
+RA:26001891
+E-mail: jose.sorg@sou.unifeob.edu.br
+
+Luis Felipe Scacabarozi Vasconcellos
+RA: 24001022
+E-mail: luis.vasconcellos@sou.unifeob.edu.br
+
+Davi Padua Medeiros de Carvalho
+RA: 25000879
+davi.carvalho@sou.unifeob.edu.br
+
+Gabriel gregores petinati 
+RA:24000581
+gabriel.petinati@sou.unifeob.edu.br
+
+Kayque Silva Zanelli
+RA: 24001664
+kayque.zanelli@sou.unifeob.edu.br
+
 Este é o passo a passo completo para baixar e executar o projeto em outro computador.
 Não é necessário abrir outros READMEs para seguir o roteiro.
 
