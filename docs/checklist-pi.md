@@ -15,6 +15,11 @@ substitui a validação dos professores nem os prazos divulgados no Classroom.
 | Conceitos Hadoop (9) | HDFS executado e validado | NameNode/DataNode locais, sem promessa de redundância |
 | DataFrames e Spark SQL (9–10) | execução real validada | spark/processar.R e docs/validacao-bigdata.md |
 | Estatística descritiva e probabilidade (10) | ampliado | moda, variância, frequências, probabilidades e testes em R |
+| Dicionário de dados | documentado | docs/dicionario-dados.md e seção 3 do notebook |
+| Notebook executável do início ao fim | escrito; executar e salvar saídas | notebooks/analise_track_field.ipynb, sem arquivos locais |
+| OLAP ligado ao problema | implementado no notebook | roll-up, drill-down, slice, dice e pivot, cada um com sua pergunta |
+| Machine Learning | implementado no notebook | itens por pedido; baselines, GLM Poisson e Random Forest com validação cruzada |
+| Insights e recomendações | implementado no notebook | seções 11–13; revalidar números após executar |
 | Automação e identificação de falhas (10–11) | ampliado | pipeline com logs e status no painel |
 | Dependências e instruções (6,10–11) | documentado | README e infraestrutura/bigdata/README.md |
 | GitHub e histórico colaborativo (5–6) | confirmar com o grupo | publicar alterações e contribuições reais, sem fabricar histórico |

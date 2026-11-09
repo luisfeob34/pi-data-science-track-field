@@ -236,7 +236,8 @@ Na aba **Próximos meses**, o modo **Automático** escolhe o modelo que teve men
 - Tendência linear: projeta crescimento ou queda conforme o histórico.
 
 Uma linha constante é válida quando um modelo constante vence a comparação. Ela não afirma que
-as vendas reais serão iguais. Os dados simulados não garantem tendência ou sazonalidade.
+as vendas reais serão iguais. O simulador gera sazonalidade e crescimento leve, mas um ano de histórico
+não permite estimar a sazonalidade anual: os picos de novembro e dezembro aparecem como erro dos modelos.
 
 Para comparar uma projeção que acompanha a direção do histórico, clique em
 **Comparar tendência de crescimento ou queda**. O gráfico, a tabela e o download usam essa escolha.
@@ -322,6 +323,8 @@ Ao terminar, siga a etapa 9. Não é necessário repetir as instalações a cada
 | `R/visualizacao.R` | gráficos |
 | `R/pipeline.R` | exportação da análise e do relatório |
 | `R/painel.R` e `painel/app.R` | painel interativo |
+| `notebooks/analise_track_field.ipynb` | análise completa: dicionário, EDA, OLAP, ML e insights |
+| `docs/dicionario-dados.md` | dicionário de dados e hipóteses do simulador |
 | `tests/` | testes automatizados |
 
 | Resultado | Local |
@@ -366,8 +369,9 @@ Uma falha de origem é provocada intencionalmente para confirmar que a publicaç
 O teste deve terminar com a mensagem de verificação bem-sucedida.
 
 Em 29/09/2026 também foram validados oito lotes da VM: 8.000 vendas, faturamento simulado
-de R$ 5.003.880,21 e carregamento automático no Shiny. Seus valores podem ser diferentes:
-o comando `simular` gera novas sementes. O ambiente usado foi Ubuntu 26.04.1 em WSL e R 4.5.2;
+de R$ 5.003.880,21 e carregamento automático no Shiny. Esses valores são da versão anterior do
+simulador, com sorteio uniforme; a versão atual gera padrões e produz outros totais.
+Seus valores também variam porque o comando `simular` gera novas sementes. O ambiente usado foi Ubuntu 26.04.1 em WSL e R 4.5.2;
 a VM convidada usa Ubuntu 24.04. Os testes não representam uma instalação validada em toda versão de Ubuntu.
 
 ## 13. Resolver problemas comuns
@@ -442,7 +446,31 @@ docker run --rm -p 127.0.0.1:8080:8080 pi-track-field-r
 Esse caminho Docker não foi executado na validação registrada. Os antigos resultados em
 `results/spark/`, `results/graficos/` e `data/processed/` são históricos e não alimentam o painel atual.
 
-## 15. Entrega acadêmica
+## 15. Notebook de análise
+
+`notebooks/analise_track_field.ipynb` reúne a análise da entrega final em R: identificação da base,
+dicionário de dados, limpeza, estatística descritiva, gráficos com interpretação, testes, operações OLAP,
+Machine Learning (itens por pedido: médias, GLM Poisson e Random Forest com validação cruzada),
+previsão mensal e insights para a situação-problema.
+
+Ele executa do início ao fim sem arquivos locais: gera a base com `gerar_vendas(5000, 42)`.
+
+- **Google Colab:** abra o arquivo pelo GitHub, mude o tipo de ambiente para **R** e use *Executar tudo*.
+  Os módulos de `R/` são baixados do branch `main`; envie as alterações ao GitHub antes.
+- **Jupyter local:** instale o kernel R e abra o notebook a partir da pasta `notebooks/`:
+
+```bash
+sudo apt install -y jupyter-notebook r-cran-irkernel r-cran-randomforest
+jupyter notebook notebooks/analise_track_field.ipynb
+```
+
+Pacotes R usados: `ggplot2` e `randomForest`; o notebook instala o que faltar.
+Para analisar a última publicação Spark do mesmo clone, altere `USAR_SPARK <- TRUE` na primeira célula.
+
+O simulador planta padrões didáticos (sazonalidade, canal por categoria, efeito do desconto na quantidade),
+documentados em `docs/dicionario-dados.md`. As conclusões demonstram o método; não descrevem a Track & Field real.
+
+## 16. Entrega acadêmica
 
 O código e os testes não substituem as atividades do grupo. Ainda é necessário registrar
 problema e beneficiário, consentimento, integrantes e responsabilidades, cronograma, reuniões,

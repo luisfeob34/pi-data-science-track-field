@@ -107,23 +107,81 @@ com_semente <- function(semente, funcao) {
   funcao()
 }
 
+# Hipóteses do simulador. São padrões didáticos plausíveis para varejo esportivo,
+# não medições da Track & Field. Servem para que EDA, OLAP e ML tenham sinal a encontrar.
+perfil_simulador <- local({
+  canais <- c("Loja Física", "E-commerce", "Marketplace")
+  categorias <- c("Vestuário", "Calçados", "Acessórios")
+  list(
+    produtos = data.frame(
+      Produto = c("Camiseta Performance", "Shorts Running", "Legging Compressão", "Tênis Running",
+        "Tênis Training", "Top Esportivo", "Jaqueta Corta-Vento", "Meia Esportiva", "Mochila Esportiva", "Garrafa Térmica"),
+      Categoria = c("Vestuário", "Vestuário", "Vestuário", "Calçados", "Calçados", "Vestuário", "Vestuário",
+        "Acessórios", "Acessórios", "Acessórios"),
+      Preco = c(149.9, 129.9, 199.9, 499.9, 449.9, 119.9, 299.9, 49.9, 249.9, 99.9),
+      Peso = c(.14, .10, .10, .13, .08, .08, .06, .13, .07, .11)),
+    # Volume relativo por mês: Dia das Mães (mai), Black Friday (nov) e Natal (dez).
+    sazonalidade_mes = c(.85, .75, .85, .90, 1.05, .95, 1.00, .95, .95, 1.00, 1.45, 1.35),
+    crescimento_anual = .15,
+    # Multiplicadores mensais de produtos sazonais (inverno, verão e Black Friday).
+    sazonal_produto = list(
+      "Jaqueta Corta-Vento" = c(.5, .5, 1, 1, 1.5, 2.5, 2.5, 2.5, 1.5, 1, 1, .5),
+      "Garrafa Térmica" = c(1.6, 1.6, 1, 1, 1, .7, .7, 1, 1, 1, 1, 1.6),
+      "Shorts Running" = c(1.4, 1.4, 1.4, 1, 1, .7, .7, .7, 1, 1, 1, 1.4),
+      "Tênis Running" = c(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1.5, 1)),
+    canais = canais,
+    canal_por_categoria = matrix(c(.45, .35, .20,
+                                   .30, .50, .20,
+                                   .25, .30, .45), 3, byrow = TRUE, dimnames = list(categorias, canais)),
+    regioes = c("Norte", "Nordeste", "Centro-Oeste", "Sudeste", "Sul"),
+    peso_regiao = c(.07, .20, .10, .44, .19),
+    descontos = c(0, .05, .10, .15),
+    desconto_por_canal = matrix(c(.55, .25, .12, .08,
+                                  .40, .25, .20, .15,
+                                  .30, .25, .25, .20), 3, byrow = TRUE, dimnames = list(canais, NULL)),
+    desconto_black_friday = c(.15, .20, .30, .35),
+    # Itens além do primeiro ~ Poisson(base da categoria × exp(elasticidade × desconto)), limitado a 5 itens.
+    itens_extras_categoria = c("Vestuário" = .70, "Calçados" = .25, "Acessórios" = 1.20),
+    elasticidade_desconto = 5)
+})
+
+# Sorteia uma coluna por linha, com pesos próprios em cada linha.
+sortear_linhas <- function(pesos) {
+  acumulado <- t(apply(pesos, 1, cumsum))
+  acumulado <- acumulado / acumulado[, ncol(acumulado)]
+  pmin(rowSums(acumulado < runif(nrow(pesos))) + 1L, ncol(pesos))
+}
+
 gerar_vendas <- function(n = 1000L, semente = 42L) {
   if (length(n) != 1 || !is.finite(n) || n < 1 || n != floor(n) || n > 1000000)
     stop("Quantidade deve ser um inteiro entre 1 e 1.000.000.")
+  p <- perfil_simulador
   com_semente(semente, function() {
-    produtos <- c("Camiseta Performance", "Shorts Running", "Legging Compressão", "Tênis Running",
-      "Tênis Training", "Top Esportivo", "Jaqueta Corta-Vento", "Meia Esportiva", "Mochila Esportiva", "Garrafa Térmica")
-    categorias <- c("Vestuário", "Vestuário", "Vestuário", "Calçados", "Calçados", "Vestuário", "Vestuário", "Acessórios", "Acessórios", "Acessórios")
-    precos <- c(149.9, 129.9, 199.9, 499.9, 449.9, 119.9, 299.9, 49.9, 249.9, 99.9)
-    ids <- sample(seq_along(produtos), n, replace = TRUE)
-    datas <- as.Date("2026-01-01") + sample(0:364, n, replace = TRUE)
-    quantidade <- sample(1:5, n, replace = TRUE)
-    desconto <- sample(c(0, .05, .10, .15), n, replace = TRUE)
-    bruto <- arredondar_moeda(precos[ids] * quantidade)
+    dias <- 0:364
+    calendario <- as.Date("2026-01-01") + dias
+    peso_dia <- p$sazonalidade_mes[as.integer(format(calendario, "%m"))] * (1 + p$crescimento_anual * dias / 364)
+    datas <- calendario[sample.int(length(calendario), n, replace = TRUE, prob = peso_dia)]
+    mes <- as.integer(format(datas, "%m"))
+    pesos_produto <- matrix(p$produtos$Peso, n, nrow(p$produtos), byrow = TRUE)
+    for (nome in names(p$sazonal_produto)) {
+      j <- match(nome, p$produtos$Produto)
+      pesos_produto[, j] <- pesos_produto[, j] * p$sazonal_produto[[nome]][mes]
+    }
+    ids <- sortear_linhas(pesos_produto)
+    categoria <- p$produtos$Categoria[ids]
+    canal <- p$canais[sortear_linhas(p$canal_por_categoria[categoria, , drop = FALSE])]
+    regiao <- sample(p$regioes, n, replace = TRUE, prob = p$peso_regiao)
+    pesos_desconto <- p$desconto_por_canal[canal, , drop = FALSE]
+    novembro <- mes == 11
+    if (any(novembro)) pesos_desconto[novembro, ] <- rep(p$desconto_black_friday, each = sum(novembro))
+    desconto <- p$descontos[sortear_linhas(pesos_desconto)]
+    lambda <- unname(p$itens_extras_categoria[categoria]) * exp(p$elasticidade_desconto * desconto)
+    quantidade <- pmin(5L, 1L + rpois(n, lambda))
+    precos <- p$produtos$Preco[ids]
+    bruto <- arredondar_moeda(precos * quantidade)
     x <- data.frame(seq_len(n), as.character(datas), sprintf("Cliente_%05d", seq_len(n)),
-      produtos[ids], categorias[ids], sample(c("Loja Física", "E-commerce", "Marketplace"), n, TRUE),
-      sample(c("Norte", "Nordeste", "Centro-Oeste", "Sudeste", "Sul"), n, TRUE),
-      precos[ids], quantidade, desconto, arredondar_moeda(bruto - arredondar_moeda(bruto * desconto)), check.names = FALSE)
+      p$produtos$Produto[ids], categoria, canal, regiao,
+      precos, quantidade, desconto, arredondar_moeda(bruto - arredondar_moeda(bruto * desconto)), check.names = FALSE)
     names(x) <- colunas_vendas
     x
   })

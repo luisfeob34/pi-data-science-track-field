@@ -61,7 +61,17 @@ Os intervalos de previsão são nominais de 95%:
 
 Previsões e limites negativos são truncados em zero. Essa restrição e a seleção do modelo
 alteram a cobertura efetiva; a faixa não é uma garantia nem inclui toda a incerteza do processo.
-Na simulação, relações e previsibilidade podem ser fracas por construção.
+O simulador planta sazonalidade, crescimento leve, preferência de canal por categoria e efeito do
+desconto na quantidade (`docs/dicionario-dados.md`). Com um ano de dados, a sazonalidade não é estimável pela série.
+
+## Machine Learning no notebook
+
+`notebooks/analise_track_field.ipynb` modela os itens por pedido (contagem de 1 a 5). Variáveis derivadas da
+quantidade (valores, porte, faixa de valor) ficam fora para evitar vazamento. Comparação: média geral, média por
+categoria, GLM Poisson dos itens extras e Random Forest. Separação 80/20; validação cruzada de 5 dobras no treino;
+seleção pela regra de 1 desvio-padrão do RMSE (o mais simples entre os equivalentes); teste usado uma única vez.
+O efeito do desconto é interpretável como causal só porque o simulador sorteia o desconto; com dados reais,
+exige experimento (A/B).
 
 ## Referências oficiais
 
