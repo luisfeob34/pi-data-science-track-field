@@ -9,9 +9,9 @@ grupo tiver efetivamente validado. Consulte `gestao-pi.md` para as informações
 
 ## 2. Mostre de onde vêm os dados
 
-O simulador `simulador/gerar_dados.R` roda na VM da P1 e gera um CSV por execução.
+O simulador `simulador/gerar_dados.R` roda na **VM geradora** e gera um CSV por execução.
 `infraestrutura/p1.sh baixar` copia os arquivos para o computador. A VM pode ser
-desligada após a cópia; o processamento seguinte roda no host Ubuntu.
+desligada após a cópia; o processamento seguinte (ETL) roda no host Ubuntu.
 
 ## 3. Execute o processamento
 
@@ -22,23 +22,27 @@ na raiz do projeto, substituindo a pasta pelo caminho mostrado ao baixar:
 bash scripts/pipeline_bigdata.sh infraestrutura/evidencias/dados-DATA-ID/dados hdfs
 ```
 
-Explique as três camadas:
+Explique o ETL do Data Warehouse:
 
-- **Bronze:** guarda o CSV original e registra sua origem.
-- **Silver:** mantém as vendas válidas, depois de tratar erros e duplicidades.
-- **Gold:** reúne indicadores e tabelas para análise.
+- **Staging:** guarda o CSV original e registra sua origem.
+- **Integração:** mantém as vendas válidas, depois de tratar erros e duplicidades.
+- **Modelo dimensional:** monta a fato e as quatro dimensões para a carga.
 
-`spark/processar.R` usa DataFrames e SQL no Spark. HDFS armazena os arquivos;
-R calcula estatísticas e previsões. Os pedidos são identificados pelo lote e pelo
+Por que Data Warehouse: os dados chegam como CSV estruturado, com esquema fixo, e o
+uso é análise histórica e OLAP. `spark/processar.R` usa DataFrames e SQL no Spark;
+HDFS armazena as camadas intermediárias. Os pedidos são identificados pelo lote e pelo
 número do pedido, para não perder vendas de execuções diferentes.
 
-## 4. Mostre o resultado
+## 4. Carregue o Data Warehouse e mostre o resultado
 
 ```bash
-bash painel/iniciar.sh
+bash infraestrutura/bigdata/hdfs.sh parar
+bash infraestrutura/p1.sh iniciar exibicao
+bash infraestrutura/p1.sh publicar
 ```
 
-Abra `http://localhost:8080`. O painel carrega a última execução publicada.
+A carga entra no PostgreSQL da **VM de exibição** em uma transação. Abra
+`http://localhost:8080`: o painel roda nessa VM e lê o Data Warehouse.
 Mostre o faturamento, o produto de maior receita e a comparação entre canais.
 Altere um filtro e explique como a leitura muda. Abra os detalhes estatísticos
 somente depois de apresentar os indicadores principais.

@@ -88,11 +88,12 @@ executar <- function() {
   }
   salvar(consulta("SELECT DISTINCT date_format(data_venda,'yyyyMMdd') AS id_data,data_venda,
     year(data_venda) AS ano,month(data_venda) AS mes,quarter(data_venda) AS trimestre FROM vendas"), "gold/dim_data")
+  # Cliente fica na fato como dimensão degenerada: é um código sintético, sem atributos.
   fato <- consulta("SELECT execucao,pedido,date_format(data_venda,'yyyyMMdd') AS id_data,
     sha2(to_json(named_struct('produto',produto,'categoria',categoria)),256) AS id_produto,
     sha2(to_json(named_struct('canal',canal)),256) AS id_canal,
     sha2(to_json(named_struct('regiao',regiao)),256) AS id_regiao,
-    quantidade,preco,desconto,valor_bruto,valor_desconto,valor_total FROM vendas")
+    cliente,quantidade,preco,desconto,valor_bruto,valor_desconto,valor_total FROM vendas")
   salvar(fato, "gold/fato_vendas")
   # Confere os Parquet gravados, incluindo as chaves do modelo estrela.
   for (nome in c("fato_vendas", "dim_produto", "dim_canal", "dim_regiao", "dim_data")) {
@@ -106,6 +107,20 @@ executar <- function() {
     INNER JOIN dim_data d ON f.id_data=d.id_data")
   stopifnot(collect(integridade)$pedidos[1] == aceitos)
   csv(integridade, "integridade_modelo.csv")
+  # Exporta o modelo estrela em CSV para a carga do Data Warehouse PostgreSQL (VM de exibição).
+  # O Spark grava em paralelo; coalesce(1) gera um arquivo por tabela, depois renomeado.
+  dir.create(file.path(pasta, "dw"))
+  for (nome in c("dim_produto", "dim_canal", "dim_regiao", "dim_data", "fato_vendas")) {
+    temporario <- file.path(normalizePath(pasta), "dw", paste0("tmp_", nome))
+    write.df(coalesce(sql(paste("SELECT * FROM", nome)), 1L), paste0("file://", temporario), "csv", "error",
+      header = "true", quote = '"', escape = '"', dateFormat = "yyyy-MM-dd")
+    parte <- list.files(temporario, "^part-.*[.]csv$", full.names = TRUE)
+    if (length(parte) != 1) stop("Exportacao do DW gerou ", length(parte), " arquivos para ", nome)
+    if (!file.rename(parte, file.path(pasta, "dw", paste0(nome, ".csv")))) stop("Falha ao exportar ", nome)
+    unlink(temporario, recursive = TRUE)
+  }
+  exportadas <- utils::read.csv(file.path(pasta, "dw", "fato_vendas.csv"))
+  stopifnot(nrow(exportadas) == aceitos)
   csv(consulta("SELECT motivo,count(*) AS registros FROM (SELECT * FROM marcados WHERE motivo IS NOT NULL) GROUP BY motivo"), "rejeicoes_campos.csv")
   total <- collect(consulta("SELECT round(sum(valor_total),2) AS total FROM vendas"))$total[1]
   descartados <- count(rejeitados)
@@ -123,7 +138,7 @@ executar <- function() {
     Exportado_painel = exportado, Duracao_segundos = as.numeric(difftime(Sys.time(),inicio,units='secs'))),
     file.path(pasta, "resumo.csv"), row.names = FALSE)
   writeLines(consultas, file.path(pasta, "consultas.sql"))
-  writeLines(c(paste("Spark:", sparkR.version()), paste("Origem:", args[1]), paste("Lake:", args[2]),
+  writeLines(c(paste("Spark:", sparkR.version()), paste("Origem:", args[1]), paste("Camadas:", args[2]),
     "Execucao local[2]: dois threads locais, sem comprovacao de escala em multiplos servidores.",
     "Dados simulados. Indicadores descrevem os lotes, nao a operacao real de uma empresa."), file.path(pasta, "ambiente.txt"))
   writeLines("ok", file.path(pasta, "CONCLUIDO"))

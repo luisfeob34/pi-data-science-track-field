@@ -1,7 +1,7 @@
 #cloud-config
 # Configuração inicial da VM; a primeira linha identifica o formato ao cloud-init.
 # Define o nome da máquina e mantém sua resolução no arquivo /etc/hosts.
-hostname: pi-track-field
+hostname: ${hostname}
 manage_etc_hosts: true
 # Cria o usuário usado pelo SSH e pelo Ansible, com sudo sem solicitação de senha.
 users:

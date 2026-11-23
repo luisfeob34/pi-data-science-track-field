@@ -1,7 +1,7 @@
 ---
-# Configura os hosts do grupo p1, criado pelo inventário gerado em p1.sh.
-- name: Preparar a VM da P1
-  hosts: p1
+# VM geradora: executa o simulador em R e guarda os lotes CSV.
+- name: Preparar a VM geradora de dados
+  hosts: geradora
   # Usa sudo para instalar pacotes e criar pastas em /opt.
   become: true
   vars:
@@ -33,3 +33,151 @@
         - /opt/pi-track-field/R
         - /opt/pi-track-field/simulador
         - /opt/pi-track-field/dados
+
+# VM de exibição: Data Warehouse em PostgreSQL e painel Shiny como serviço.
+- name: Preparar a VM de exibicao (Data Warehouse e painel)
+  hosts: exibicao
+  become: true
+  vars:
+    ansible_timeout: 60
+    projeto: "{{ playbook_dir }}/../.."
+    app: /opt/pi-track-field/painel-app
+    dw_nome: dw_vendas
+  tasks:
+    # psycopg2 e acl permitem ao Ansible administrar o PostgreSQL como usuário postgres.
+    - name: Instalar PostgreSQL, R, pacotes do painel e driver do banco
+      ansible.builtin.apt:
+        name:
+          - postgresql
+          - python3-psycopg2
+          - acl
+          - r-base-core
+          - r-cran-shiny
+          - r-cran-ggplot2
+          - r-cran-plotly
+          - r-cran-dt
+          - r-cran-dbi
+          - r-cran-rpostgres
+        state: present
+        update_cache: true
+        cache_valid_time: 86400
+        install_recommends: false
+        lock_timeout: 600
+
+    - name: Manter o PostgreSQL ativo e habilitado na inicializacao
+      ansible.builtin.service:
+        name: postgresql
+        state: started
+        enabled: true
+
+    # O usuário pi acessa o banco pelo socket local (autenticação peer): nenhuma senha é criada.
+    - name: Criar o papel pi no PostgreSQL
+      community.postgresql.postgresql_user:
+        name: pi
+      become_user: postgres
+
+    - name: Criar o banco do Data Warehouse
+      community.postgresql.postgresql_db:
+        name: "{{ dw_nome }}"
+        owner: pi
+      become_user: postgres
+      notify: Aplicar esquema do DW
+
+    - name: Criar pastas do DW, das cargas e do painel
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: directory
+        owner: pi
+        group: pi
+        mode: '0755'
+      loop:
+        - /opt/pi-track-field
+        - /opt/pi-track-field/dw
+        - /opt/pi-track-field/carga
+        - "{{ app }}"
+        - "{{ app }}/painel"
+        - "{{ app }}/scripts"
+        - "{{ app }}/results"
+
+    # O esquema só é reaplicado quando muda, para manter o Ansible idempotente.
+    - name: Copiar esquema e script de carga do DW
+      ansible.builtin.copy:
+        src: "{{ projeto }}/dw/{{ item }}"
+        dest: "/opt/pi-track-field/dw/{{ item }}"
+        owner: pi
+        group: pi
+        mode: '0644'
+      loop:
+        - esquema.sql
+        - carregar.sql
+      notify: Aplicar esquema do DW
+
+    # O painel roda na VM: o código vem do repositório; os dados, do Data Warehouse.
+    - name: Copiar o codigo do painel
+      ansible.builtin.copy:
+        src: "{{ projeto }}/{{ item.origem }}"
+        dest: "{{ app }}/{{ item.destino }}"
+        owner: pi
+        group: pi
+        mode: '0644'
+      loop:
+        - { origem: R/, destino: R/ }
+        - { origem: painel/app.R, destino: painel/app.R }
+        - { origem: painel/www/, destino: painel/www/ }
+        - { origem: scripts/iniciar_painel.R, destino: scripts/iniciar_painel.R }
+      notify: Reiniciar painel
+
+    # Escuta em todas as interfaces da VM; no host, só 127.0.0.1:8080 é encaminhado.
+    - name: Instalar o servico do painel
+      ansible.builtin.copy:
+        dest: /etc/systemd/system/pi-painel.service
+        owner: root
+        group: root
+        mode: '0644'
+        content: |
+          [Unit]
+          Description=Painel PI Track & Field (Shiny) lendo o Data Warehouse
+          After=network-online.target postgresql.service
+          Wants=postgresql.service
+
+          [Service]
+          User=pi
+          Group=pi
+          WorkingDirectory={{ app }}
+          Environment=SHINY_HOST=0.0.0.0
+          Environment=PI_DW_NOME={{ dw_nome }}
+          ExecStart=/usr/bin/Rscript {{ app }}/scripts/iniciar_painel.R 8080
+          Restart=on-failure
+          RestartSec=5
+
+          [Install]
+          WantedBy=multi-user.target
+      notify:
+        - Recarregar systemd
+        - Reiniciar painel
+
+    # Aplica o esquema e recarrega o systemd antes de iniciar o serviço pela primeira vez.
+    - name: Executar alteracoes pendentes antes de iniciar o painel
+      ansible.builtin.meta: flush_handlers
+
+    - name: Manter o painel ativo e habilitado na inicializacao
+      ansible.builtin.systemd:
+        name: pi-painel
+        state: started
+        enabled: true
+
+  handlers:
+    - name: Aplicar esquema do DW
+      ansible.builtin.command:
+        cmd: psql -X -v ON_ERROR_STOP=1 -d {{ dw_nome }} -f /opt/pi-track-field/dw/esquema.sql
+      become_user: pi
+      changed_when: true
+
+    - name: Recarregar systemd
+      ansible.builtin.systemd:
+        daemon_reload: true
+
+    - name: Reiniciar painel
+      ansible.builtin.systemd:
+        name: pi-painel
+        state: restarted

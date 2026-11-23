@@ -26,7 +26,8 @@ criar_ui <- function() {
         shiny::tags$details(class = "detalhes",
         shiny::tags$summary("Trocar dados ou criar demonstração"),
         shiny::textOutput("fonte"),
-        shiny::actionButton("carregar_spark", "Carregar última execução Spark", class = "btn-block"),
+        shiny::actionButton("carregar_spark", if (nzchar(Sys.getenv("PI_DW_NOME")))
+          "Recarregar do Data Warehouse" else "Carregar última execução Spark", class = "btn-block"),
         shiny::textOutput("estado_pipeline"),
         shiny::fileInput("arquivo", "Carregar arquivo de vendas", accept = ".csv", buttonLabel = "Escolher", placeholder = "Nenhum arquivo"),
         shiny::helpText("Use as 11 colunas da base de vendas. A importação fica nesta sessão e preserva o arquivo original."),
@@ -112,7 +113,11 @@ criar_servidor <- function(raiz) {
     }
     base <- shiny::reactiveVal(estado_inicial)
     fonte <- shiny::reactiveVal(fonte_inicial)
+    # Na VM de exibição, PI_DW_NOME aponta para o Data Warehouse PostgreSQL, a fonte oficial.
+    modo_dw <- nzchar(Sys.getenv("PI_DW_NOME"))
+    carga_dw <- shiny::reactiveVal(NULL)
     output$estado_pipeline <- shiny::renderText({
+      if (modo_dw) return(descrever_carga_dw(carga_dw()))
       shiny::invalidateLater(10000, session)
       arquivos <- list.files(file.path(raiz, "results", "monitoramento"), pattern = "[.]csv$", full.names = TRUE)
       if (!length(arquivos)) return("Nenhuma execução Big Data registrada.")
@@ -150,7 +155,13 @@ criar_servidor <- function(raiz) {
         aceitar_base(ler_vendas(input$arquivo$datapath), paste("CSV importado:", input$arquivo$name))
       }, error = function(e) shiny::showNotification(conditionMessage(e), type = "error", duration = 10))
     })
+    carregar_dw <- function() {
+      z <- ler_dw()
+      aceitar_base(z$dados, paste("Data Warehouse:", z$carga$execucao_spark[1], "· dados simulados"))
+      carga_dw(z$carga)
+    }
     carregar_resultado_spark <- function() {
+      if (modo_dw) return(carregar_dw())
       z <- ultima_base_spark(raiz)
       if (is.null(z)) stop("Execute o pipeline Big Data antes de carregar os resultados.")
       aceitar_base(ler_vendas(z$arquivo), paste("Spark:", z$id, "· dados simulados"))
@@ -160,7 +171,7 @@ criar_servidor <- function(raiz) {
         shiny::showNotification(conditionMessage(e), type = "error", duration = 15))
     })
     shiny::observeEvent(TRUE, {
-      if (file.exists(file.path(raiz, "results", "bigdata", "ultima.txt")))
+      if (modo_dw || file.exists(file.path(raiz, "results", "bigdata", "ultima.txt")))
         tryCatch(carregar_resultado_spark(), error = function(e)
           shiny::showNotification(conditionMessage(e), type = "warning", duration = 15))
     }, once = TRUE)

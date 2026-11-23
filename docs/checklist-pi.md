@@ -10,13 +10,14 @@ substitui a validação dos professores nem os prazos divulgados no Classroom.
 | Coleta ou geração (8) | implementado | simulador/gerar_dados.R e VM da P1 |
 | Qualidade e tratamento (8) | implementado | R/dados.R, spark/processar.R, quarentena e testes |
 | Visualizações e interpretações (8–10) | implementado com dados sintéticos | Shiny e relatório R; confirmar utilidade no problema real |
-| Data Lake/Warehouse e ETL (9) | implementado e validado | docs/arquitetura-pi.md e docs/validacao-bigdata.md |
+| Data Warehouse e ETL (9) | implementado; validar a carga nas VMs | DW PostgreSQL na VM de exibição (dw/), ETL Spark; docs/arquitetura-pi.md |
+| Exibição em VM separada da geração | implementado; validar nas VMs | VM geradora (dados) e VM de exibição (DW + painel em localhost:8080) |
 | Modelo dimensional quando aplicável (9) | validado por leitura e junção | fato e quatro dimensões Parquet na gold |
 | Conceitos Hadoop (9) | HDFS executado e validado | NameNode/DataNode locais, sem promessa de redundância |
 | DataFrames e Spark SQL (9–10) | execução real validada | spark/processar.R e docs/validacao-bigdata.md |
 | Estatística descritiva e probabilidade (10) | ampliado | moda, variância, frequências, probabilidades e testes em R |
 | Dicionário de dados | documentado | docs/dicionario-dados.md e seção 3 do notebook |
-| Notebook executável do início ao fim | escrito; executar e salvar saídas | notebooks/analise_track_field.ipynb, sem arquivos locais |
+| Notebook executável do início ao fim | executado no Colab, com saídas salvas | notebooks/analise_track_field.ipynb, sem arquivos locais |
 | OLAP ligado ao problema | implementado no notebook | roll-up, drill-down, slice, dice e pivot, cada um com sua pergunta |
 | Machine Learning | implementado no notebook | itens por pedido; baselines, GLM Poisson e Random Forest com validação cruzada |
 | Insights e recomendações | implementado no notebook | seções 11–13; revalidar números após executar |
